@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-const API = "https://api.anthropic.com/v1/messages";
+const API = "/api/anthropic";
 
 // ── Design tokens ─────────────────────────────────────────────────
 const t = {
