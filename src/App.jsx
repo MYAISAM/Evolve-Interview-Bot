@@ -232,7 +232,7 @@ function Landing({ onStart }) {
         <div style={{ position: "relative", zIndex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 28 }}>
             <BetaBadge />
-            <span style={{ color: t.inkLight, fontSize: 13, fontStyle: "italic" }}>Free for Aleto Foundation members</span>
+            <span style={{ color: t.inkLight, fontSize: 13, fontStyle: "italic" }}>Free to use · Share your feedback</span>
           </div>
           <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(38px,8vw,68px)", fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.02em", marginBottom: 20 }}>
             Practice your<br />
@@ -735,7 +735,7 @@ function SummaryStep({ answers, userInfo, category }) {
             role: "user",
             content: `Create a short, practical interview cheat sheet for this candidate. Warm, direct, confidence-building tone. Under 220 words.
 
-Use exactly these 3 sections:
+Use exactly these 3 sections with plain text headers, no asterisks, no markdown:
 **Your strongest moments:** (2-3 bullet points)
 **Watch out for:** (2 bullet points max)
 **Walk in with this:** (one punchy sentence — the mindset to carry into the room)
