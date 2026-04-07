@@ -194,9 +194,11 @@ const QUESTION_BANK = {
  
 const ROADMAP = [
   { version: "Beta (Now)", title: "AI Interview Coach", description: "Job description analysis, curated question banks, written coaching feedback, personalised cheat sheet.", status: "live", icon: "check" },
-  { version: "V2", title: "Voice Interview Mode", description: "Speak your answers out loud. AI coaches on delivery, filler words, pace, and confidence — not just content.", status: "soon", icon: "mic" },
-  { version: "V3", title: "Industry Deep Dives", description: "Specialist question banks for medical, legal, finance, and tech roles. Backed by real hiring data.", status: "coming", icon: "book" },
-  { version: "V4", title: "Full Interview Simulation", description: "Back-to-back questions in real time. Panel interview mode. Timed responses. The full experience.", status: "coming", icon: "film" },
+  { version: "V2", title: "Session History & Progress", description: "Save your prep across sessions. See how your answers improve over time. Requires a free account.", status: "soon", icon: "star" },
+  { version: "V3", title: "Redo & Improve", description: "Flag questions you struggled with, answer again, and get a comparison showing exactly how you improved.", status: "coming", icon: "arrow" },
+  { version: "V4", title: "Voice Interview Mode", description: "Hear questions read aloud. Speak your answers. AI coaches on content — delivery analysis follows.", status: "coming", icon: "mic" },
+  { version: "V5", title: "Industry Deep Dives", description: "Specialist question banks for medical, legal, finance, and tech. You tell us which sectors to build first.", status: "coming", icon: "book" },
+  { version: "V6", title: "Full Interview Simulation", description: "Back-to-back questions, timed, no pause. Panel interview mode. The full mock experience.", status: "coming", icon: "film" },
 ];
  
 // ── Markdown renderer (lightweight) ──────────────────────────────
@@ -364,7 +366,7 @@ function Landing({ onStart }) {
  
       <Divider />
  
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, paddingBottom: 56, textAlign: "center" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, paddingBottom: 48, textAlign: "center" }}>
         {[
           { n: "6+", label: "Tailored questions per session" },
           { n: "6", label: "Role categories covered" },
@@ -375,6 +377,45 @@ function Landing({ onStart }) {
             <div style={{ color: t.inkMid, fontSize: 13, marginTop: 4, lineHeight: 1.4 }}>{s.label}</div>
           </div>
         ))}
+      </div>
+ 
+      <Divider />
+ 
+      {/* Roadmap on landing */}
+      <div style={{ paddingBottom: 64 }}>
+        <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>What's coming</Tag></div>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+          This is just the beginning.
+        </h2>
+        <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 24, fontWeight: 300, lineHeight: 1.6 }}>
+          The beta is the foundation. Here's where we're taking it — shaped by feedback from people like you.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {ROADMAP.map((item, i) => (
+            <div key={i} style={{
+              background: item.status === "live" ? "#f0f9f0" : t.surface,
+              border: `1.5px solid ${item.status === "live" ? t.accentGreen : t.border}`,
+              borderRadius: 10, padding: "14px 18px",
+              display: "flex", gap: 14, alignItems: "flex-start",
+            }}>
+              <div style={{ flexShrink: 0, marginTop: 2 }}>
+                <Icon name={item.icon} size={18} colour={item.status === "live" ? t.accentGreen : t.inkLight} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>{item.title}</span>
+                  <Tag
+                    colour={item.status === "live" ? t.tag : item.status === "soon" ? "#fff3cd" : t.surfaceAlt}
+                    textColour={item.status === "live" ? t.accentGreen : item.status === "soon" ? "#856404" : t.inkMid}
+                  >
+                    {item.status === "live" ? "Live now" : item.status === "soon" ? "Coming soon" : "On the roadmap"}
+                  </Tag>
+                </div>
+                <p style={{ color: t.inkMid, fontSize: 13, lineHeight: 1.5 }}>{item.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -860,9 +901,8 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 function SummaryStep({ answers, userInfo, category }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
-  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackText, setFeedbackText] = useState({});
   const [feedbackSent, setFeedbackSent] = useState(false);
-  const [tab, setTab] = useState("summary");
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
  
@@ -909,14 +949,18 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
     setLoadingSheet(false);
   }
  
-  const tabs = [
-    { key: "summary", label: "Your Summary" },
-    { key: "roadmap", label: "What's Coming" },
-    { key: "feedback", label: "Leave Feedback" },
+  const FEATURES = [
+    "Save my sessions and track progress over time",
+    "Redo questions I struggled with and see improvement",
+    "Hear questions read aloud in the coach's voice",
+    "Get a reminder the day before my interview",
+    "Share my cheat sheet with a mentor or friend",
   ];
  
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px 60px" }}>
+ 
+      {/* Session complete header */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
           <Icon name="target" size={40} colour={t.accentGreen} />
@@ -924,124 +968,157 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
         <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, fontWeight: 700, marginBottom: 8 }}>
           Session complete.
         </h2>
-        <p style={{ color: t.inkMid, fontStyle: "italic" }}>You answered {answers.filter(a => a.a).length} of {answers.length} questions.</p>
+        <p style={{ color: t.inkMid, fontStyle: "italic" }}>
+          You answered {answers.filter(a => a.a).length} of {answers.length} questions.
+        </p>
       </div>
  
-      {/* Tab nav */}
-      <div style={{ display: "flex", borderBottom: `2px solid ${t.border}`, marginBottom: 28, gap: 0 }}>
-        {tabs.map(tb => (
-          <button key={tb.key} onClick={() => setTab(tb.key)} style={{
-            background: "none", border: "none", padding: "10px 20px", fontSize: 14, fontWeight: 600,
-            cursor: "pointer", color: tab === tb.key ? t.accentPop : t.inkMid,
-            borderBottom: `2px solid ${tab === tb.key ? t.accentPop : "transparent"}`,
-            marginBottom: -2, fontFamily: "'Inter', sans-serif", transition: "color 0.2s",
-          }}>{tb.label}</button>
-        ))}
-      </div>
- 
-      {/* Summary tab */}
-      {tab === "summary" && (
-        <div className="fade-in">
-          <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
-            {loadingSheet ? (
-              <div style={{ textAlign: "center", padding: "30px 0" }}>
-                <ThinkingDots colour={t.accentGreen} />
-                <p style={{ marginTop: 12, color: t.inkLight, fontStyle: "italic", fontSize: 13 }}>
-                  Building your cheat sheet…
-                </p>
-              </div>
-            ) : (
-              <RenderMarkdown text={cheatSheet} />
-            )}
-          </div>
-          <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "16px 20px" }}>
-            <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
-              <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this. Voice interview mode and deeper role coaching are coming soon — see the <button onClick={() => setTab("roadmap")} style={{ background: "none", border: "none", color: t.accentPop, cursor: "pointer", textDecoration: "underline", fontSize: 13, fontFamily: "inherit" }}>roadmap</button>.
+      {/* Cheat sheet */}
+      <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        {loadingSheet ? (
+          <div style={{ textAlign: "center", padding: "30px 0" }}>
+            <ThinkingDots colour={t.accentGreen} />
+            <p style={{ marginTop: 12, color: t.inkLight, fontStyle: "italic", fontSize: 13 }}>
+              Building your cheat sheet…
             </p>
           </div>
-        </div>
-      )}
+        ) : (
+          <RenderMarkdown text={cheatSheet} />
+        )}
+      </div>
  
-      {/* Roadmap tab */}
-      {tab === "roadmap" && (
+      {/* Beta note */}
+      <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
+        <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
+          <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this tool. Session history, progress tracking, and voice mode are all coming — see the full roadmap on the <a href="/" style={{ color: t.accentPop }}>homepage</a>.
+        </p>
+      </div>
+ 
+      <Divider />
+ 
+      {/* Feedback section — fair exchange */}
+      {!feedbackSent ? (
         <div className="fade-in">
-          <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 24, fontStyle: "italic" }}>
-            Here's where we're taking this. Your feedback shapes what gets built next.
+          <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Before you go</Tag></div>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
+            Three quick questions.
+          </h3>
+          <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
+            This tool is free during beta. In return, we'd love 3 minutes of honest feedback — it directly shapes what gets built next.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {ROADMAP.map((item, i) => (
-              <div key={i} style={{
-                background: item.status === "live" ? "#f0f9f0" : t.surface,
-                border: `1.5px solid ${item.status === "live" ? t.accentGreen : t.border}`,
-                borderRadius: 10, padding: "18px 20px",
-                display: "flex", gap: 16, alignItems: "flex-start",
-              }}>
-                <div style={{ flexShrink: 0, marginTop: 2 }}>
-                  <Icon name={item.icon} size={22} colour={item.status === "live" ? t.accentGreen : t.inkMid} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, fontSize: 15 }}>{item.title}</span>
-                    <Tag
-                      colour={item.status === "live" ? t.tag : item.status === "soon" ? "#fff3cd" : t.surfaceAlt}
-                      textColour={item.status === "live" ? t.accentGreen : item.status === "soon" ? "#856404" : t.inkMid}
-                    >
-                      {item.status === "live" ? "Live now" : item.status === "soon" ? "Coming soon" : "On the roadmap"}
-                    </Tag>
-                  </div>
-                  <p style={{ color: t.inkMid, fontSize: 13, lineHeight: 1.5 }}>{item.description}</p>
-                  <p style={{ color: t.inkLight, fontSize: 11, marginTop: 4, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.version}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 24, padding: "16px 20px", background: t.surfaceAlt, borderRadius: 10 }}>
-            <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
-              <strong>You're shaping this.</strong> As an Aleto beta tester, your feedback directly influences what we build. Head to the Feedback tab and tell us what you think.
-            </p>
-          </div>
-        </div>
-      )}
  
-      {/* Feedback tab */}
-      {tab === "feedback" && (
-        <div className="fade-in">
-          {feedbackSent ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                <Icon name="check" size={40} colour={t.accentGreen} />
-              </div>
-              <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, marginBottom: 8 }}>Thank you — genuinely.</h3>
-              <p style={{ color: t.inkMid, fontSize: 15, fontStyle: "italic" }}>This feedback goes straight into making the product better.</p>
-            </div>
-          ) : (
-            <>
-              <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 24, fontStyle: "italic" }}>
-                This is a beta. Your honest feedback — good or bad — is exactly what we need.
-              </p>
-              {[
-                "What worked well in the session?",
-                "What felt off or could be better?",
-                "What would make you use this before a real interview?",
-              ].map((q, i) => (
-                <div key={i} style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8, color: t.ink }}>{q}</label>
-                  <textarea
-                    rows={3}
-                    onChange={e => setFeedbackText(prev => prev + `\n${q}\n${e.target.value}`)}
-                    style={{
-                      width: "100%", background: t.surface, border: `1.5px solid ${t.border}`,
-                      borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6,
-                      outline: "none",
-                    }}
-                  />
-                </div>
+          {/* Q1 */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
+              1. What was the hardest question in today's session?
+            </label>
+            <textarea
+              rows={3}
+              onChange={e => setFeedbackText(prev => ({ ...prev, q1: e.target.value }))}
+              placeholder="The question that made you think hardest…"
+              style={{
+                width: "100%", background: t.surface, border: `1.5px solid ${t.border}`,
+                borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none",
+              }}
+            />
+          </div>
+ 
+          {/* Q2 */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
+              2. Did the coaching feel relevant to your actual role?
+            </label>
+            <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+              {["Yes, very", "Mostly", "Not really"].map(opt => (
+                <button key={opt}
+                  onClick={() => setFeedbackText(prev => ({ ...prev, q2: opt }))}
+                  style={{
+                    padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer",
+                    fontFamily: "'Inter', sans-serif", transition: "all 0.15s",
+                    background: feedbackText.q2 === opt ? t.accentGreen : t.surface,
+                    color: feedbackText.q2 === opt ? "#fff" : t.ink,
+                    border: `1.5px solid ${feedbackText.q2 === opt ? t.accentGreen : t.border}`,
+                  }}
+                >{opt}</button>
               ))}
-              <Btn onClick={() => setFeedbackSent(true)} variant="pop">
-                Send feedback →
-              </Btn>
-            </>
-          )}
+            </div>
+            <textarea
+              rows={2}
+              onChange={e => setFeedbackText(prev => ({ ...prev, q2detail: e.target.value }))}
+              placeholder="Any detail helps — even one sentence…"
+              style={{
+                width: "100%", background: t.surface, border: `1.5px solid ${t.border}`,
+                borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none",
+              }}
+            />
+          </div>
+ 
+          {/* Q3 */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
+              3. Anything you wished we'd asked you?
+            </label>
+            <textarea
+              rows={2}
+              onChange={e => setFeedbackText(prev => ({ ...prev, q3: e.target.value }))}
+              placeholder="A question you were expecting but didn't get…"
+              style={{
+                width: "100%", background: t.surface, border: `1.5px solid ${t.border}`,
+                borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none",
+              }}
+            />
+          </div>
+ 
+          {/* Q4 — feature validation checkboxes */}
+          <div style={{ marginBottom: 28 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
+              4. Which of these would make you come back to this tool?
+            </label>
+            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 12, fontStyle: "italic" }}>Select all that apply</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {FEATURES.map((feat, i) => {
+                const selected = (feedbackText.q4 || []).includes(feat);
+                return (
+                  <div key={i}
+                    onClick={() => setFeedbackText(prev => {
+                      const current = prev.q4 || [];
+                      return { ...prev, q4: selected ? current.filter(f => f !== feat) : [...current, feat] };
+                    })}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                      background: selected ? t.tag : t.surface,
+                      border: `1.5px solid ${selected ? t.accentGreen : t.border}`,
+                      borderRadius: 8, cursor: "pointer", transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                      background: selected ? t.accentGreen : "#fff",
+                      border: `1.5px solid ${selected ? t.accentGreen : t.border}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {selected && <Icon name="check" size={11} colour="#fff" />}
+                    </div>
+                    <span style={{ fontSize: 14, color: t.ink, lineHeight: 1.4 }}>{feat}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+ 
+          <Btn onClick={() => setFeedbackSent(true)} variant="pop">
+            Send feedback →
+          </Btn>
+        </div>
+      ) : (
+        <div className="fade-in" style={{ textAlign: "center", padding: "40px 0" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+            <Icon name="check" size={40} colour={t.accentGreen} />
+          </div>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, marginBottom: 8 }}>Thank you — genuinely.</h3>
+          <p style={{ color: t.inkMid, fontSize: 15, fontStyle: "italic" }}>
+            This feedback goes straight into making the product better. Good luck with your interview.
+          </p>
         </div>
       )}
     </div>
