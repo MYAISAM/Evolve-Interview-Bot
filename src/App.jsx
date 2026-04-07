@@ -1157,10 +1157,10 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
         <div className="fade-in">
           <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Before you go</Tag></div>
           <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
-            Three quick questions.
+            Four quick questions.
           </h3>
           <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
-            This tool is free during beta. In return, we'd love 3 minutes of honest feedback — it directly shapes what gets built next.
+            This tool is free during beta. In return, we'd love 3 minutes of honest feedback across four quick questions — it directly shapes what gets built next.
           </p>
 
           {/* Q1 */}
