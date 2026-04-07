@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
- 
+
 const API = "/api/anthropic";
- 
+
 // ── Design tokens ─────────────────────────────────────────────────
 const t = {
   bg: "#ffffff",
@@ -18,7 +18,7 @@ const t = {
   tag: "#edf4f2",
   tagText: "#3F6F63",
 };
- 
+
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,7 +52,7 @@ const css = `
     will-change: background-position;
   }
 `;
- 
+
 // ── SVG Icon System ───────────────────────────────────────────────
 // All icons use brand green (#3F6F63) as default, orange (#D47A2C) for highlights
 function Icon({ name, size = 20, colour = t.accentGreen }) {
@@ -79,7 +79,7 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
     </svg>
   );
 }
- 
+
 // ── Question Bank ─────────────────────────────────────────────────
 const QUESTION_BANK = {
   sales: {
@@ -347,7 +347,7 @@ const QUESTION_BANK = {
     ],
   },
 };
- 
+
 const ROADMAP = [
   { version: "Beta (Now)", title: "AI Interview Coach", description: "Job description analysis, curated question banks, written coaching feedback, personalised cheat sheet.", status: "live", icon: "check" },
   { version: "V2", title: "Session History & Progress", description: "Save your prep across sessions. See how your answers improve over time. Requires a free account.", status: "soon", icon: "star" },
@@ -356,24 +356,24 @@ const ROADMAP = [
   { version: "V5", title: "Industry Deep Dives", description: "Specialist question banks for medical, legal, finance, and tech. You tell us which sectors to build first.", status: "coming", icon: "book" },
   { version: "V6", title: "Full Interview Simulation", description: "Back-to-back questions, timed, no pause. Panel interview mode. The full mock experience.", status: "coming", icon: "film" },
 ];
- 
+
 // ── Markdown renderer (lightweight) ──────────────────────────────
 // Converts **bold**, bullet points (• - *), and headers into clean JSX
 function RenderMarkdown({ text, style = {} }) {
   if (!text) return null;
- 
+
   const lines = text.split("\n");
- 
+
   return (
     <div style={{ fontSize: 15, lineHeight: 1.85, color: t.ink, ...style }}>
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{ height: 8 }} />;
- 
+
         // Section headers (lines ending with : that are short, or known headers)
         const isHeader =
           trimmed.endsWith(":") && trimmed.length < 60 && !trimmed.startsWith("•") && !trimmed.startsWith("-");
- 
+
         if (isHeader) {
           return (
             <p key={i} style={{
@@ -384,13 +384,13 @@ function RenderMarkdown({ text, style = {} }) {
             </p>
           );
         }
- 
+
         // Bullet lines
         const isBullet = trimmed.startsWith("•") || trimmed.startsWith("- ") || trimmed.startsWith("* ");
         const bulletContent = isBullet
           ? trimmed.replace(/^[•\-\*]\s*/, "")
           : null;
- 
+
         if (isBullet) {
           return (
             <div key={i} style={{ display: "flex", gap: 10, marginBottom: 6, alignItems: "flex-start" }}>
@@ -401,7 +401,7 @@ function RenderMarkdown({ text, style = {} }) {
             </div>
           );
         }
- 
+
         // Regular paragraph with inline bold
         return (
           <p key={i} style={{ marginBottom: 4 }}>
@@ -412,7 +412,7 @@ function RenderMarkdown({ text, style = {} }) {
     </div>
   );
 }
- 
+
 // Handles **bold** inline within text
 function renderInline(text) {
   if (!text) return null;
@@ -424,7 +424,7 @@ function renderInline(text) {
     return part;
   });
 }
- 
+
 // ── Shared UI ─────────────────────────────────────────────────────
 function BetaBadge() {
   return (
@@ -433,11 +433,11 @@ function BetaBadge() {
     </span>
   );
 }
- 
+
 function Divider() {
   return <div style={{ height: 1, background: t.border, margin: "28px 0" }} />;
 }
- 
+
 function Btn({ onClick, disabled, children, variant = "primary", style = {} }) {
   const base = { border: "none", borderRadius: 6, padding: "13px 26px", fontSize: 15, fontWeight: 500, cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.18s", fontFamily: "'Inter', sans-serif", ...style };
   const variants = {
@@ -447,7 +447,7 @@ function Btn({ onClick, disabled, children, variant = "primary", style = {} }) {
   };
   return <button onClick={onClick} disabled={disabled} style={{ ...base, ...variants[variant] }}>{children}</button>;
 }
- 
+
 function Tag({ children, colour = t.tag, textColour = t.tagText }) {
   return (
     <span style={{ background: colour, color: textColour, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "sans-serif" }}>
@@ -455,7 +455,7 @@ function Tag({ children, colour = t.tag, textColour = t.tagText }) {
     </span>
   );
 }
- 
+
 // Animated dots — green for loading questions, orange for processing answers
 function ThinkingDots({ colour = t.accentGreen }) {
   return (
@@ -466,18 +466,18 @@ function ThinkingDots({ colour = t.accentGreen }) {
     </span>
   );
 }
- 
+
 // ── Scroll to top helper ──────────────────────────────────────────
 function useScrollToTop(dep) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [dep]);
 }
- 
+
 // ── Landing ───────────────────────────────────────────────────────
 function Landing({ onStart }) {
   const gridRef = useRef(null);
- 
+
   useEffect(() => {
     const handleScroll = () => {
       if (!gridRef.current) return;
@@ -487,7 +487,7 @@ function Landing({ onStart }) {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
- 
+
   return (
     <div className="fade-up" style={{ maxWidth: 620, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ textAlign: "center", padding: "56px 0 48px", position: "relative" }}>
@@ -519,9 +519,9 @@ function Landing({ onStart }) {
           <p style={{ color: t.inkLight, fontSize: 12, marginTop: 14, fontStyle: "italic" }}>No signup · No payment · Beta access</p>
         </div>
       </div>
- 
+
       <Divider />
- 
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, paddingBottom: 48, textAlign: "center" }}>
         {[
           { n: "6+", label: "Tailored questions per session" },
@@ -534,9 +534,9 @@ function Landing({ onStart }) {
           </div>
         ))}
       </div>
- 
+
       <Divider />
- 
+
       {/* Roadmap on landing */}
       <div style={{ paddingBottom: 64 }}>
         <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>What's coming</Tag></div>
@@ -576,13 +576,13 @@ function Landing({ onStart }) {
     </div>
   );
 }
- 
+
 // ── Category Picker ───────────────────────────────────────────────
 function CategoryStep({ onNext }) {
   const [selected, setSelected] = useState(null);
   const [jd, setJd] = useState("");
   useScrollToTop("category");
- 
+
   return (
     <div className="fade-up" style={{ maxWidth: 640, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 1 of 3</Tag></div>
@@ -592,7 +592,7 @@ function CategoryStep({ onNext }) {
       <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, fontWeight: 300 }}>
         We'll blend curated questions with ones tailored to the specific job.
       </p>
- 
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 32 }}>
         {Object.entries(QUESTION_BANK).map(([key, cat]) => (
           <div key={key} className="hover-lift" onClick={() => setSelected(key)} style={{
@@ -613,7 +613,7 @@ function CategoryStep({ onNext }) {
           </div>
         ))}
       </div>
- 
+
       <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 20 }}>
         <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
           Paste the job description
@@ -639,7 +639,7 @@ function CategoryStep({ onNext }) {
           </p>
         )}
       </div>
- 
+
       <Btn onClick={() => onNext({ category: selected, jd })} disabled={!selected || jd.length < 50}>
         Continue →
       </Btn>
@@ -648,14 +648,14 @@ function CategoryStep({ onNext }) {
     </div>
   );
 }
- 
+
 // ── About You ─────────────────────────────────────────────────────
 function AboutStep({ onNext }) {
   const [background, setBackground] = useState("");
   const [why, setWhy] = useState("");
   const [worry, setWorry] = useState("");
   useScrollToTop("about");
- 
+
   return (
     <div className="fade-up" style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 2 of 3</Tag></div>
@@ -689,7 +689,7 @@ function AboutStep({ onNext }) {
     </div>
   );
 }
- 
+
 // ── Coaching Session ──────────────────────────────────────────────
 function CoachingStep({ category, jd, userInfo, onFinish }) {
   const [questions, setQuestions] = useState([]);
@@ -705,7 +705,7 @@ function CoachingStep({ category, jd, userInfo, onFinish }) {
   const [micError, setMicError] = useState(null);
   const recognitionRef = useRef(null);
   useScrollToTop("coaching");
- 
+
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -732,7 +732,7 @@ function CoachingStep({ category, jd, userInfo, onFinish }) {
       recognitionRef.current = recognition;
     }
   }, []);
- 
+
   function toggleMic() {
     if (!recognitionRef.current) return;
     setMicError(null);
@@ -744,18 +744,18 @@ function CoachingStep({ category, jd, userInfo, onFinish }) {
       setIsListening(true);
     }
   }
- 
+
   useEffect(() => { buildQuestions(); }, []);
- 
+
   // Scroll to top whenever question changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentQ]);
- 
+
   async function buildQuestions() {
     const bank = QUESTION_BANK[category];
     const shuffled = [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
- 
+
     try {
       const res = await fetch(API, {
         method: "POST",
@@ -766,7 +766,7 @@ function CoachingStep({ category, jd, userInfo, onFinish }) {
           messages: [{
             role: "user",
             content: `You are a senior interviewer with 15 years experience hiring for ${bank.label} roles. Generate exactly 4 interview questions for this specific role.
- 
+
 CRITICAL RULES:
 - Read the job description carefully and extract specific requirements, skills, tools, and responsibilities mentioned
 - Each question MUST reference something specific from the job description — a named skill, responsibility, tool, or challenge mentioned in the spec
@@ -774,14 +774,14 @@ CRITICAL RULES:
 - Mix behavioural (past experience) and situational (hypothetical scenario) questions
 - Make questions feel like they came from a real hiring manager who read the spec, not a template
 - Return ONLY a valid JSON array of strings, no markdown, no explanation
- 
+
 Job Description:
 ${jd}
- 
+
 Role Category: ${bank.label}
 Candidate background: ${userInfo.background}
 Why they want this role: ${userInfo.why}
- 
+
 Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
           }],
         }),
@@ -806,7 +806,7 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
     }
     setPhase("answering");
   }
- 
+
   async function getFeedback() {
     setPhase("feedback");
     setLoadingFeedback(true);
@@ -821,27 +821,27 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
           messages: [{
             role: "user",
             content: `You are a warm, direct interview coach helping a real candidate prepare for a specific role. Give personalised, specific feedback — not generic advice.
- 
+
 Use what you know about them:
 - Their background: ${userInfo.background}
 - Why they want this role: ${userInfo.why}
 - Their worry going in: ${userInfo.worry || "not specified"}
 - The role they're applying for: ${category} — ${jd.slice(0, 300)}
- 
+
 Give feedback in exactly these 3 sections, using these exact headers:
- 
+
 What landed well:
 (1-2 sentences — name something specific and genuine from their answer, connected to what this role needs)
- 
+
 What to sharpen:
 (1-2 sentences — one specific, actionable improvement tied to this role or their background)
- 
+
 Try saying it like this:
 (Rewrite their answer in 2-3 punchy sentences they could actually use in the room — make it sound like them, not a template)
- 
+
 Question asked: ${questions[currentQ]}
 Their answer: ${answer}
- 
+
 Keep the whole response under 200 words. Be a coach, not a critic. No bullet points, no markdown symbols — just the three plain sections with their headers.`,
           }],
         }),
@@ -853,7 +853,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     }
     setLoadingFeedback(false);
   }
- 
+
   function nextQuestion() {
     const newAnswers = [...answers, { q: questions[currentQ], a: answer, feedback, type: questionTypes[currentQ] }];
     setAnswers(newAnswers);
@@ -866,7 +866,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       setPhase("answering");
     }
   }
- 
+
   // ── Loading screen ──
   if (phase === "loading") {
     return (
@@ -887,10 +887,10 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       </div>
     );
   }
- 
+
   const progress = questions.length > 0 ? currentQ / questions.length : 0;
   const cat = QUESTION_BANK[category];
- 
+
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px" }}>
       {/* Progress */}
@@ -904,7 +904,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       <div style={{ height: 3, background: t.border, borderRadius: 2, marginBottom: 32, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${progress * 100}%`, background: t.accentPop, transition: "width 0.4s ease", borderRadius: 2 }} />
       </div>
- 
+
       {/* Question type badge */}
       <div style={{ marginBottom: 12 }}>
         {questionTypes[currentQ] === "curated"
@@ -912,7 +912,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           : <Tag colour="#fff3f0" textColour={t.accentPop}>From your job description</Tag>
         }
       </div>
- 
+
       {/* Question card */}
       <div style={{
         background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: `4px solid ${t.accentPop}`,
@@ -922,7 +922,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           {questions[currentQ]}
         </p>
       </div>
- 
+
       {/* Answer */}
       {phase === "answering" && (
         <>
@@ -975,7 +975,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               )}
             </div>
           )}
- 
+
           <div style={{ position: "relative" }}>
             <textarea
               value={answer} onChange={e => setAnswer(e.target.value)}
@@ -998,7 +998,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               }}>clear</button>
             )}
           </div>
- 
+
           <div style={{ display: "flex", gap: 12 }}>
             <Btn onClick={getFeedback} disabled={answer.length < 20}>
               Get coaching →
@@ -1009,7 +1009,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           </div>
         </>
       )}
- 
+
       {/* Feedback */}
       {phase === "feedback" && (
         <div className="fade-in">
@@ -1028,7 +1028,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               <RenderMarkdown text={feedback} />
             )}
           </div>
- 
+
           {/* Disclaimer on the "Try saying it like this" suggestion */}
           {!loadingFeedback && (
             <div style={{
@@ -1041,7 +1041,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               </p>
             </div>
           )}
- 
+
           {!loadingFeedback && (
             <Btn onClick={nextQuestion}>
               {currentQ + 1 >= questions.length ? "See my summary →" : "Next question →"}
@@ -1052,7 +1052,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     </div>
   );
 }
- 
+
 // ── Summary + Feedback + Roadmap ──────────────────────────────────
 function SummaryStep({ answers, userInfo, category }) {
   const [cheatSheet, setCheatSheet] = useState("");
@@ -1061,9 +1061,9 @@ function SummaryStep({ answers, userInfo, category }) {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
- 
+
   useEffect(() => { generateSummary(); }, []);
- 
+
   async function generateSummary() {
     try {
       const res = await fetch(API, {
@@ -1075,20 +1075,20 @@ function SummaryStep({ answers, userInfo, category }) {
           messages: [{
             role: "user",
             content: `Create a short, practical interview cheat sheet for this candidate. Warm, direct, confidence-building tone. Under 220 words.
- 
+
 Use exactly these 3 sections with these plain text headers followed by a colon. Do not use asterisks, dashes, or any markdown formatting in the headers themselves:
- 
+
 Your strongest moments:
 (2-3 bullet points — use the • character only, not dashes or asterisks)
- 
+
 Watch out for:
 (2 bullet points max — use the • character only)
- 
+
 Walk in with this:
 (one punchy sentence — the mindset to carry into the room)
- 
+
 IMPORTANT: Use ONLY the • character for bullets. Do not use **, *, or - anywhere in your response. Write headers as plain text followed by a colon on its own line.
- 
+
 Candidate background: ${userInfo.background}
 Why they want this role: ${userInfo.why}
 Their biggest worry: ${userInfo.worry || "not specified"}
@@ -1104,7 +1104,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
     }
     setLoadingSheet(false);
   }
- 
+
   const FEATURES = [
     "Save my sessions and track progress over time",
     "Redo questions I struggled with and see improvement",
@@ -1112,10 +1112,10 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
     "Get a reminder the day before my interview",
     "Share my cheat sheet with a mentor or friend",
   ];
- 
+
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px 60px" }}>
- 
+
       {/* Session complete header */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
@@ -1128,7 +1128,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
           You answered {answers.filter(a => a.a).length} of {answers.length} questions.
         </p>
       </div>
- 
+
       {/* Cheat sheet */}
       <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
         {loadingSheet ? (
@@ -1142,16 +1142,16 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
           <RenderMarkdown text={cheatSheet} />
         )}
       </div>
- 
+
       {/* Beta note */}
       <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
         <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
           <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this tool. Session history, progress tracking, and voice mode are all coming — see the full roadmap on the <a href="/" style={{ color: t.accentPop }}>homepage</a>.
         </p>
       </div>
- 
+
       <Divider />
- 
+
       {/* Feedback section — fair exchange */}
       {!feedbackSent ? (
         <div className="fade-in">
@@ -1162,7 +1162,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
           <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
             This tool is free during beta. In return, we'd love 3 minutes of honest feedback — it directly shapes what gets built next.
           </p>
- 
+
           {/* Q1 */}
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
@@ -1178,7 +1178,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
               }}
             />
           </div>
- 
+
           {/* Q2 */}
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
@@ -1208,7 +1208,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
               }}
             />
           </div>
- 
+
           {/* Q3 */}
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
@@ -1224,7 +1224,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
               }}
             />
           </div>
- 
+
           {/* Q4 — feature validation checkboxes */}
           <div style={{ marginBottom: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>
@@ -1261,8 +1261,23 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
               })}
             </div>
           </div>
- 
-          <Btn onClick={() => setFeedbackSent(true)} variant="pop">
+
+          <Btn onClick={async () => {
+            try {
+              const body = new URLSearchParams({
+                "form-name": "beta-feedback",
+                "q1-hardest-question": feedbackText.q1 || "",
+                "q2-coaching-relevant": feedbackText.q2 || "",
+                "q2-detail": feedbackText.q2detail || "",
+                "q3-missing-questions": feedbackText.q3 || "",
+                "q4-features": (feedbackText.q4 || []).join(", "),
+              });
+              await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+            } catch (e) {
+              console.error("Feedback submit error", e);
+            }
+            setFeedbackSent(true);
+          }} variant="pop">
             Send feedback →
           </Btn>
         </div>
@@ -1280,7 +1295,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
     </div>
   );
 }
- 
+
 // ── App Shell ─────────────────────────────────────────────────────
 export default function App() {
   const [step, setStep] = useState(0);
@@ -1288,9 +1303,9 @@ export default function App() {
   const [jd, setJd] = useState("");
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
- 
+
   function reset() { setStep(0); setCategory(null); setJd(""); setUserInfo(null); setSessionAnswers([]); }
- 
+
   return (
     <>
       <style>{css}</style>
@@ -1314,7 +1329,7 @@ export default function App() {
             )}
           </div>
         </header>
- 
+
         {/* Main */}
         <main style={{ maxWidth: 720, margin: "0 auto", paddingTop: 40 }}>
           {step === 0 && <Landing onStart={() => setStep(1)} />}
