@@ -544,7 +544,7 @@ function Landing({ onStart }) {
           This is just the beginning.
         </h2>
         <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 24, fontWeight: 300, lineHeight: 1.6 }}>
-          The beta is the foundation. Here's where we're taking it — shaped by feedback from people like you.
+          The beta is the foundation. Here's where we're taking it, shaped by feedback from people like you.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {ROADMAP.map((item, i) => (
