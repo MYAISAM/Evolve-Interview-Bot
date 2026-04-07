@@ -313,6 +313,39 @@ const QUESTION_BANK = {
       "Tell me about a time you led by example during a period of uncertainty.",
     ],
   },
+  graduate: {
+    label: "Graduate & Early Careers",
+    icon: "sparkle",
+    colour: "#fff0e8",
+    borderColour: "#c2410c",
+    questions: [
+      "Tell me about yourself — your degree, your experience so far, and why you're here.",
+      "Why have you applied for this role specifically — what drew you to it?",
+      "What did you study and how does it prepare you for this kind of work?",
+      "Tell me about a project, dissertation, or piece of work you're genuinely proud of.",
+      "Describe a time you had to manage multiple deadlines at once — how did you cope?",
+      "Tell me about a time you worked as part of a team toward a shared goal.",
+      "What extracurricular activities, jobs, or experiences have shaped how you work?",
+      "Describe a situation where you had to learn something new quickly under pressure.",
+      "Tell me about a time you took initiative without being asked to.",
+      "How do you handle feedback — give me an example of a time you acted on it.",
+      "What's the biggest challenge you've faced so far, and how did you deal with it?",
+      "Tell me about a time you disagreed with someone — how did you handle it?",
+      "Describe a situation where things didn't go to plan — what did you do?",
+      "What does good teamwork look like to you — give me an example from your experience.",
+      "Tell me about a time you had to persuade someone to see your point of view.",
+      "How do you stay organised and manage your time when you have a lot on?",
+      "Tell me about something you've taught yourself outside of your studies or work.",
+      "Why do you want to start your career in this sector or type of role?",
+      "What do you know about this organisation and why does it appeal to you?",
+      "Where do you want to be in three to five years, and how does this role fit that?",
+      "Tell me about a time you showed resilience when something felt really difficult.",
+      "Describe a situation where you had to adapt quickly to a change.",
+      "What kind of workplace culture do you think you'd thrive in — and why?",
+      "Tell me about a time you contributed something meaningful to a group or community.",
+      "What's one thing about yourself that doesn't show up on your CV but matters to you?",
+    ],
+  },
 };
  
 const ROADMAP = [
@@ -492,7 +525,7 @@ function Landing({ onStart }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, paddingBottom: 48, textAlign: "center" }}>
         {[
           { n: "6+", label: "Tailored questions per session" },
-          { n: "7", label: "Role categories covered" },
+          { n: "8", label: "Role categories covered" },
           { n: "∞", label: "Sessions during beta" },
         ].map(s => (
           <div key={s.n}>
@@ -1294,4 +1327,3 @@ export default function App() {
     </>
   );
 }
- 
