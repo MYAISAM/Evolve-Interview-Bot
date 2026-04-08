@@ -1194,6 +1194,27 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
               })}
             </div>
           </div>
+          <div style={{ marginBottom: 28 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
+              Stay in the loop <span style={{ color: t.inkLight, fontWeight: 400 }}>(optional)</span>
+            </label>
+            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+              Drop your email if you'd like to hear when new features land — voice mode, session history, and more are on the way. No spam, just updates when something worth sharing is ready.
+            </p>
+            <input
+              type="email"
+              value={feedbackText.email || ""}
+              onChange={e => setFeedbackText(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="your@email.com"
+              style={{
+                width: "100%", background: t.surface,
+                border: `1.5px solid ${feedbackText.email ? t.ink : t.border}`,
+                borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14,
+                outline: "none", transition: "border-color 0.2s",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            />
+          </div>
           <Btn onClick={async () => {
             try {
               const body = new URLSearchParams({
@@ -1203,6 +1224,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
                 "q2-detail": feedbackText.q2detail || "",
                 "q3-missing-questions": feedbackText.q3 || "",
                 "q4-features": (feedbackText.q4 || []).join(", "),
+                "email": feedbackText.email || "",
               });
               await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
             } catch (e) { console.error("Feedback submit error", e); }
