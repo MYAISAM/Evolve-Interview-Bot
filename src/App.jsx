@@ -711,7 +711,6 @@ function CoachingStep({ category, jd, userInfo, onFinish, onBackToAbout }) {
     const shuffled = [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
 
     try {
-      // Step 1 — validate onboarding answers are genuine, not gibberish
       const validationRes = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -737,7 +736,6 @@ Reply with only the word VALID if both are genuine real responses, or INVALID if
         return;
       }
 
-      // Step 2 — generate questions
       const res = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -857,17 +855,11 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
 
-  // Loading phase — shows gibberish error with clean back route, or spinner
   if (phase === "loading") {
     if (onboardingInvalid) {
       return (
         <div className="fade-in" style={{ maxWidth: 520, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
-          <div style={{
-            background: "#fff8f6",
-            border: `1.5px solid ${t.accentPop}40`,
-            borderRadius: 16,
-            padding: "36px 28px",
-          }}>
+          <div style={{ background: "#fff8f6", border: `1.5px solid ${t.accentPop}40`, borderRadius: 16, padding: "36px 28px" }}>
             <Icon name="warning" size={36} colour={t.accentPop} />
             <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, margin: "16px 0 10px", color: t.ink }}>
               Those answers didn't look quite right
@@ -875,29 +867,18 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
             <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
               We need a bit of real information about you to make this session worthwhile. Even a rough sentence or two is enough — we just can't personalise your coaching without something genuine to work with.
             </p>
-            <Btn onClick={onBackToAbout} variant="pop">
-              ← Go back and try again
-            </Btn>
+            <Btn onClick={onBackToAbout} variant="pop">← Go back and try again</Btn>
           </div>
         </div>
       );
     }
-
     return (
       <div style={{ textAlign: "center", padding: "80px 24px" }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 14,
-          background: t.surface, border: `1.5px solid ${t.border}`,
-          borderRadius: 16, padding: "20px 32px",
-        }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 14, background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "20px 32px" }}>
           <ThinkingDots colour={t.accentGreen} />
-          <p style={{ color: t.inkMid, fontStyle: "italic", fontSize: 15, margin: 0 }}>
-            Building your personalised question set…
-          </p>
+          <p style={{ color: t.inkMid, fontStyle: "italic", fontSize: 15, margin: 0 }}>Building your personalised question set…</p>
         </div>
-        <p style={{ color: t.inkLight, fontSize: 12, marginTop: 16, fontStyle: "italic" }}>
-          Reading your job description and selecting the best questions
-        </p>
+        <p style={{ color: t.inkLight, fontSize: 12, marginTop: 16, fontStyle: "italic" }}>Reading your job description and selecting the best questions</p>
       </div>
     );
   }
@@ -923,13 +904,8 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           : <Tag colour="#fff3f0" textColour={t.accentPop}>From your job description</Tag>
         }
       </div>
-      <div style={{
-        background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: `4px solid ${t.accentPop}`,
-        borderRadius: 10, padding: "22px 24px", marginBottom: 24,
-      }}>
-        <p style={{ fontSize: 18, fontWeight: 400, lineHeight: 1.55, fontFamily: "'Inter', sans-serif" }}>
-          {questions[currentQ]}
-        </p>
+      <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: `4px solid ${t.accentPop}`, borderRadius: 10, padding: "22px 24px", marginBottom: 24 }}>
+        <p style={{ fontSize: 18, fontWeight: 400, lineHeight: 1.55, fontFamily: "'Inter', sans-serif" }}>{questions[currentQ]}</p>
       </div>
 
       {phase === "answering" && (
@@ -962,10 +938,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
                 {isListening && (
                   <div style={{ marginLeft: "auto", display: "flex", gap: 3, alignItems: "center" }}>
                     {[0, 0.15, 0.3, 0.15, 0].map((delay, i) => (
-                      <div key={i} style={{
-                        width: 3, borderRadius: 2, background: t.accentPop,
-                        height: `${12 + i * 6}px`, animation: `pulse 0.8s ${delay}s infinite`,
-                      }} />
+                      <div key={i} style={{ width: 3, borderRadius: 2, background: t.accentPop, height: `${12 + i * 6}px`, animation: `pulse 0.8s ${delay}s infinite` }} />
                     ))}
                   </div>
                 )}
@@ -980,9 +953,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           <div style={{ position: "relative" }}>
             <textarea
               value={answer} onChange={e => setAnswer(e.target.value)}
-              placeholder={micSupported
-                ? "Your spoken answer will appear here — edit freely, or just type directly."
-                : "Answer as you would in the room — no wrong answers, only ones we can improve."}
+              placeholder={micSupported ? "Your spoken answer will appear here — edit freely, or just type directly." : "Answer as you would in the room — no wrong answers, only ones we can improve."}
               rows={6}
               style={{
                 width: "100%", background: isListening ? "#fffaf9" : t.surface,
@@ -992,11 +963,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               }}
             />
             {answer.length > 0 && (
-              <button onClick={() => setAnswer("")} style={{
-                position: "absolute", top: 10, right: 10, background: t.surfaceAlt,
-                border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 11,
-                color: t.inkMid, cursor: "pointer", fontFamily: "sans-serif",
-              }}>clear</button>
+              <button onClick={() => setAnswer("")} style={{ position: "absolute", top: 10, right: 10, background: t.surfaceAlt, border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 11, color: t.inkMid, cursor: "pointer", fontFamily: "sans-serif" }}>clear</button>
             )}
           </div>
           <div style={{ display: "flex", gap: 12 }}>
@@ -1008,10 +975,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 
       {phase === "feedback" && (
         <div className="fade-in">
-          <div style={{
-            background: "#fffdf7", border: `1.5px solid ${t.border}`, borderRadius: 10,
-            padding: "20px 22px", marginBottom: 12, minHeight: 100,
-          }}>
+          <div style={{ background: "#fffdf7", border: `1.5px solid ${t.border}`, borderRadius: 10, padding: "20px 22px", marginBottom: 12, minHeight: 100 }}>
             {loadingFeedback ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
                 <ThinkingDots colour={t.accentPop} />
@@ -1022,10 +986,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
             )}
           </div>
           {!loadingFeedback && (
-            <div style={{
-              background: t.surfaceAlt, borderRadius: 8, padding: "10px 14px",
-              marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 8,
-            }}>
+            <div style={{ background: t.surfaceAlt, borderRadius: 8, padding: "10px 14px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 8 }}>
               <Icon name="sparkle" size={14} colour={t.inkLight} />
               <p style={{ fontSize: 12, color: t.inkLight, lineHeight: 1.5, fontStyle: "italic" }}>
                 The suggested answer above is an example only — use it as inspiration and always replace with your own real experiences and facts.
@@ -1044,13 +1005,35 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 }
 
 // ── Summary ───────────────────────────────────────────────────────
-function SummaryStep({ answers, userInfo, category }) {
+function SummaryStep({ answers, userInfo, category, onRestart }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
   const [feedbackText, setFeedbackText] = useState({});
   const [feedbackSent, setFeedbackSent] = useState(false);
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
+
+  const answeredCount = answers.filter(a => a.a && a.a.trim().length > 0).length;
+  const totalCount = answers.length;
+
+  // FIX: If user skipped all questions, show a warm prompt to try again
+  // rather than generating a misleading cheat sheet from zero answers
+  if (answeredCount === 0) {
+    return (
+      <div className="fade-in" style={{ maxWidth: 520, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+        <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "36px 28px" }}>
+          <Icon name="warning" size={36} colour={t.accentPop} />
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, margin: "16px 0 10px", color: t.ink }}>
+            You didn't answer any questions
+          </h3>
+          <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
+            We noticed you skipped everything this time — that's fine, but it means there's nothing for us to coach you on. The cheat sheet works best when you've had a real go at the questions, even rough answers. Give it another try.
+          </p>
+          <Btn onClick={onRestart} variant="pop">Start a new session →</Btn>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => { generateSummary(); }, []);
 
@@ -1110,8 +1093,19 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
           <Icon name="target" size={40} colour={t.accentGreen} />
         </div>
         <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, fontWeight: 700, marginBottom: 8 }}>Session complete.</h2>
-        <p style={{ color: t.inkMid, fontStyle: "italic" }}>You answered {answers.filter(a => a.a).length} of {answers.length} questions.</p>
+        <p style={{ color: t.inkMid, fontStyle: "italic" }}>You answered {answeredCount} of {totalCount} questions.</p>
       </div>
+
+      {/* Low answer count warning — shown but doesn't block */}
+      {answeredCount < 3 && (
+        <div style={{ background: "#fff8f6", border: `1.5px solid ${t.accentPop}40`, borderRadius: 10, padding: "14px 18px", marginBottom: 20, display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <Icon name="warning" size={16} colour={t.accentPop} />
+          <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
+            You only answered {answeredCount} question{answeredCount === 1 ? "" : "s"} — the cheat sheet below is based on limited input, so it may be less specific than usual. Next time, have a go at more questions even if your answers feel rough.
+          </p>
+        </div>
+      )}
+
       <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
         {loadingSheet ? (
           <div style={{ textAlign: "center", padding: "30px 0" }}>
@@ -1122,12 +1116,15 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
           <RenderMarkdown text={cheatSheet} />
         )}
       </div>
+
       <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
         <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
           <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this tool. Session history, progress tracking, and voice mode are all coming — see the full roadmap on the <a href="/" style={{ color: t.accentPop }}>homepage</a>.
         </p>
       </div>
+
       <Divider />
+
       {!feedbackSent ? (
         <div className="fade-in">
           <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Before you go</Tag></div>
@@ -1180,12 +1177,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
                     border: `1.5px solid ${selected ? t.accentGreen : t.border}`,
                     borderRadius: 8, cursor: "pointer", transition: "all 0.15s",
                   }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                      background: selected ? t.accentGreen : "#fff",
-                      border: `1.5px solid ${selected ? t.accentGreen : t.border}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0, background: selected ? t.accentGreen : "#fff", border: `1.5px solid ${selected ? t.accentGreen : t.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {selected && <Icon name="check" size={11} colour="#fff" />}
                     </div>
                     <span style={{ fontSize: 14, color: t.ink, lineHeight: 1.4 }}>{feat}</span>
@@ -1210,8 +1202,7 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
                 width: "100%", background: t.surface,
                 border: `1.5px solid ${feedbackText.email ? t.ink : t.border}`,
                 borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14,
-                outline: "none", transition: "border-color 0.2s",
-                fontFamily: "'Inter', sans-serif",
+                outline: "none", transition: "border-color 0.2s", fontFamily: "'Inter', sans-serif",
               }}
             />
           </div>
@@ -1262,15 +1253,10 @@ export default function App() {
     <>
       <style>{css}</style>
       <div style={{ minHeight: "100vh", background: "#ffffff" }}>
-        <header style={{
-          borderBottom: "1px solid rgba(0,0,0,0.08)", background: "#ffffff",
-          padding: "0 24px", position: "sticky", top: 0, zIndex: 10,
-        }}>
+        <header style={{ borderBottom: "1px solid rgba(0,0,0,0.08)", background: "#ffffff", padding: "0 24px", position: "sticky", top: 0, zIndex: 10 }}>
           <div style={{ maxWidth: 720, margin: "0 auto", height: 62, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: "#3F6F63" }}>
-                AI Evolving You
-              </span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: "#3F6F63" }}>AI Evolving You</span>
               <BetaBadge />
             </div>
             {step > 0 && (
@@ -1293,7 +1279,14 @@ export default function App() {
               onBackToAbout={() => setStep(2)}
             />
           )}
-          {step === 4 && <SummaryStep answers={sessionAnswers} userInfo={userInfo} category={category} />}
+          {step === 4 && (
+            <SummaryStep
+              answers={sessionAnswers}
+              userInfo={userInfo}
+              category={category}
+              onRestart={reset}
+            />
+          )}
         </main>
       </div>
     </>
