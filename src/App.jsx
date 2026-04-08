@@ -65,12 +65,14 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
     mic: "M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8",
     check: "M20 6L9 17l-5-5",
     arrow: "M5 12h14M12 5l7 7-7 7",
+    arrowLeft: "M19 12H5M12 19l-7-7 7-7",
     star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
     book: "M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 004 17V4h16v13H6.5M4 19.5V21",
     film: "M7 4v16M17 4v16M3 8h4M17 8h4M3 12h18M3 16h4M17 16h4M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z",
     target: "M12 22a10 10 0 100-20 10 10 0 000 20zM12 18a6 6 0 100-12 6 6 0 000 12zM12 14a2 2 0 100-4 2 2 0 000 4z",
     sparkle: "M12 3v1M12 20v1M4.22 4.22l.7.7M19.08 19.08l.7.7M3 12h1M20 12h1M4.22 19.78l.7-.7M19.08 4.92l.7-.7M12 7a5 5 0 100 10A5 5 0 0012 7z",
     warning: "M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
+    refresh: "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15",
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={colour} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -666,6 +668,8 @@ function CoachingStep({ category, jd, userInfo, onFinish, onBackToAbout }) {
   const [micSupported, setMicSupported] = useState(false);
   const [micError, setMicError] = useState(null);
   const [onboardingInvalid, setOnboardingInvalid] = useState(false);
+  // FIX: tracks whether current feedback is a gibberish nudge
+  const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
   const recognitionRef = useRef(null);
   useScrollToTop("coaching");
 
@@ -786,10 +790,16 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
     setPhase("answering");
   }
 
+  // FIX: Detect if feedback is a gibberish nudge by checking for the sentinel phrase.
+  // This is used to tag the saved answer as genuine: false so the cheat sheet
+  // doesn't count it toward a real session.
+  const GIBBERISH_SENTINEL = "might not have been a real attempt";
+
   async function getFeedback() {
     setPhase("feedback");
     setLoadingFeedback(true);
     setFeedback("");
+    setFeedbackIsGibberish(false);
     try {
       const res = await fetch(API, {
         method: "POST",
@@ -801,7 +811,7 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
             role: "user",
             content: `You are a warm, direct interview coach helping a real candidate prepare for a specific role. Give personalised, specific feedback — not generic advice.
 
-IMPORTANT: First check if the answer is genuine. If the answer is random characters, gibberish, a single word, or clearly not a real attempt (e.g. "asdfgh", "xxx", "idk"), do NOT give coaching feedback. Instead respond with only this:
+IMPORTANT: First check if the answer is genuine. If the answer is random characters, gibberish, a single word, or clearly not a real attempt (e.g. "asdfgh", "xxx", "idk"), do NOT give coaching feedback. Instead respond with only this exact text:
 
 What landed well:
 It looks like that answer might not have been a real attempt — that's completely fine, it happens.
@@ -839,20 +849,71 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
         }),
       });
       const data = await res.json();
-      setFeedback(data.content[0].text);
+      const feedbackText = data.content[0].text;
+      setFeedback(feedbackText);
+      // Detect gibberish response by checking for sentinel phrase
+      setFeedbackIsGibberish(feedbackText.includes(GIBBERISH_SENTINEL));
     } catch {
       setFeedback("What landed well:\nYou engaged with the question directly — that confidence matters.\n\nWhat to sharpen:\nAdd a specific example to make your answer more memorable.\n\nTry saying it like this:\nSet the scene briefly, explain what you did, and land on the result. That structure will stick with any interviewer.");
+      setFeedbackIsGibberish(false);
     }
     setLoadingFeedback(false);
   }
 
+  // FIX: retry — clear answer and go back to answering phase without advancing
+  function retryAnswer() {
+    setAnswer("");
+    setFeedback("");
+    setFeedbackIsGibberish(false);
+    setPhase("answering");
+  }
+
+  // FIX: Save answer with genuine flag based on whether feedback was a gibberish nudge
   function nextQuestion() {
-    const newAnswers = [...answers, { q: questions[currentQ], a: answer, feedback, type: questionTypes[currentQ] }];
+    const isGenuine = !feedbackIsGibberish && answer.trim().length > 0;
+    const newAnswers = [...answers, {
+      q: questions[currentQ],
+      a: answer,
+      feedback,
+      type: questionTypes[currentQ],
+      genuine: isGenuine,
+    }];
     setAnswers(newAnswers);
     setAnswer("");
     setFeedback("");
+    setFeedbackIsGibberish(false);
     if (currentQ + 1 >= questions.length) { onFinish(newAnswers); }
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
+  }
+
+  // FIX: Skip saves with genuine: false since no answer was given
+  function skipQuestion() {
+    const newAnswers = [...answers, {
+      q: questions[currentQ],
+      a: "",
+      feedback: "",
+      type: questionTypes[currentQ],
+      genuine: false,
+    }];
+    setAnswers(newAnswers);
+    setAnswer("");
+    setFeedback("");
+    setFeedbackIsGibberish(false);
+    if (currentQ + 1 >= questions.length) { onFinish(newAnswers); }
+    else { setCurrentQ(c => c + 1); setPhase("answering"); }
+  }
+
+  // FIX: Back button — go to previous question, restore its answer
+  function goBack() {
+    if (currentQ === 0) return;
+    const prevAnswers = [...answers];
+    const prev = prevAnswers.pop();
+    setAnswers(prevAnswers);
+    setCurrentQ(c => c - 1);
+    setAnswer(prev?.a || "");
+    setFeedback(prev?.feedback || "");
+    setFeedbackIsGibberish(false);
+    setPhase(prev?.feedback ? "feedback" : "answering");
   }
 
   if (phase === "loading") {
@@ -888,6 +949,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px" }}>
+      {/* Progress bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name={cat.icon} size={16} colour={t.inkMid} />
@@ -898,12 +960,14 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       <div style={{ height: 3, background: t.border, borderRadius: 2, marginBottom: 32, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${progress * 100}%`, background: t.accentPop, transition: "width 0.4s ease", borderRadius: 2 }} />
       </div>
+
       <div style={{ marginBottom: 12 }}>
         {questionTypes[currentQ] === "curated"
           ? <Tag colour={cat.colour} textColour={cat.borderColour}>From question bank</Tag>
           : <Tag colour="#fff3f0" textColour={t.accentPop}>From your job description</Tag>
         }
       </div>
+
       <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: `4px solid ${t.accentPop}`, borderRadius: 10, padding: "22px 24px", marginBottom: 24 }}>
         <p style={{ fontSize: 18, fontWeight: 400, lineHeight: 1.55, fontFamily: "'Inter', sans-serif" }}>{questions[currentQ]}</p>
       </div>
@@ -966,9 +1030,15 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               <button onClick={() => setAnswer("")} style={{ position: "absolute", top: 10, right: 10, background: t.surfaceAlt, border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 11, color: t.inkMid, cursor: "pointer", fontFamily: "sans-serif" }}>clear</button>
             )}
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Btn onClick={getFeedback} disabled={answer.length < 30}>Get coaching →</Btn>
-            <Btn variant="outline" onClick={nextQuestion}>Skip question</Btn>
+            <Btn variant="outline" onClick={skipQuestion}>Skip question</Btn>
+            {/* FIX: Back button — only shown if not on first question */}
+            {currentQ > 0 && (
+              <Btn variant="outline" onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Icon name="arrowLeft" size={14} colour={t.inkMid} /> Previous
+              </Btn>
+            )}
           </div>
         </>
       )}
@@ -985,7 +1055,8 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               <RenderMarkdown text={feedback} />
             )}
           </div>
-          {!loadingFeedback && (
+
+          {!loadingFeedback && !feedbackIsGibberish && (
             <div style={{ background: t.surfaceAlt, borderRadius: 8, padding: "10px 14px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 8 }}>
               <Icon name="sparkle" size={14} colour={t.inkLight} />
               <p style={{ fontSize: 12, color: t.inkLight, lineHeight: 1.5, fontStyle: "italic" }}>
@@ -993,10 +1064,33 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               </p>
             </div>
           )}
+
           {!loadingFeedback && (
-            <Btn onClick={nextQuestion}>
-              {currentQ + 1 >= questions.length ? "See my summary →" : "Next question →"}
-            </Btn>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {/* FIX: If gibberish detected, show retry option prominently */}
+              {feedbackIsGibberish ? (
+                <>
+                  <Btn onClick={retryAnswer} variant="pop" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Icon name="refresh" size={15} colour="#fff" /> Try again
+                  </Btn>
+                  <Btn variant="outline" onClick={nextQuestion}>
+                    {currentQ + 1 >= questions.length ? "Finish anyway →" : "Move on →"}
+                  </Btn>
+                </>
+              ) : (
+                <>
+                  <Btn onClick={nextQuestion}>
+                    {currentQ + 1 >= questions.length ? "See my summary →" : "Next question →"}
+                  </Btn>
+                  {/* FIX: Back button also available from feedback screen */}
+                  {currentQ > 0 && (
+                    <Btn variant="outline" onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Icon name="arrowLeft" size={14} colour={t.inkMid} /> Previous
+                    </Btn>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -1013,12 +1107,14 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
 
-  const answeredCount = answers.filter(a => a.a && a.a.trim().length > 0).length;
+  // FIX: Only count answers marked genuine: true
+  // Gibberish answers and skips are both genuine: false
+  const genuineCount = answers.filter(a => a.genuine === true).length;
   const totalCount = answers.length;
+  const halfOrMore = genuineCount >= Math.ceil(totalCount / 2);
 
-  // FIX: If user skipped all questions, show a warm prompt to try again
-  // rather than generating a misleading cheat sheet from zero answers
-  if (answeredCount === 0) {
+  // FIX: Zero genuine answers — full block, no cheat sheet
+  if (genuineCount === 0) {
     return (
       <div className="fade-in" style={{ maxWidth: 520, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
         <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "36px 28px" }}>
@@ -1066,7 +1162,7 @@ Candidate background: ${userInfo.background}
 Why they want this role: ${userInfo.why}
 Their biggest worry: ${userInfo.worry || "not specified"}
 Role category: ${cat.label}
-Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA: ${a.a}`).join("\n\n")}`,
+Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.q}\nA: ${a.a}`).join("\n\n")}`,
           }],
         }),
       });
@@ -1093,15 +1189,15 @@ Session answers: ${answers.filter(a => a.a).map((a, i) => `Q${i + 1}: ${a.q}\nA:
           <Icon name="target" size={40} colour={t.accentGreen} />
         </div>
         <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, fontWeight: 700, marginBottom: 8 }}>Session complete.</h2>
-        <p style={{ color: t.inkMid, fontStyle: "italic" }}>You answered {answeredCount} of {totalCount} questions.</p>
+        <p style={{ color: t.inkMid, fontStyle: "italic" }}>You answered {genuineCount} of {totalCount} questions.</p>
       </div>
 
-      {/* Low answer count warning — shown but doesn't block */}
-      {answeredCount < 3 && (
+      {/* FIX: Low genuine answer warning — shown when less than half were genuine */}
+      {!halfOrMore && (
         <div style={{ background: "#fff8f6", border: `1.5px solid ${t.accentPop}40`, borderRadius: 10, padding: "14px 18px", marginBottom: 20, display: "flex", gap: 12, alignItems: "flex-start" }}>
           <Icon name="warning" size={16} colour={t.accentPop} />
           <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
-            You only answered {answeredCount} question{answeredCount === 1 ? "" : "s"} — the cheat sheet below is based on limited input, so it may be less specific than usual. Next time, have a go at more questions even if your answers feel rough.
+            You only answered {genuineCount} question{genuineCount === 1 ? "" : "s"} this session — the cheat sheet below is based on limited input and may be less specific than usual. Next time, have a go at more questions even if your answers feel rough.
           </p>
         </div>
       )}
