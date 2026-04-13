@@ -668,7 +668,6 @@ function CoachingStep({ category, jd, userInfo, onFinish, onBackToAbout }) {
   const [micSupported, setMicSupported] = useState(false);
   const [micError, setMicError] = useState(null);
   const [onboardingInvalid, setOnboardingInvalid] = useState(false);
-  // FIX: tracks whether current feedback is a gibberish nudge
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
   const recognitionRef = useRef(null);
   useScrollToTop("coaching");
@@ -790,9 +789,6 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
     setPhase("answering");
   }
 
-  // FIX: Detect if feedback is a gibberish nudge by checking for the sentinel phrase.
-  // This is used to tag the saved answer as genuine: false so the cheat sheet
-  // doesn't count it toward a real session.
   const GIBBERISH_SENTINEL = "might not have been a real attempt";
 
   async function getFeedback() {
@@ -851,7 +847,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       const data = await res.json();
       const feedbackText = data.content[0].text;
       setFeedback(feedbackText);
-      // Detect gibberish response by checking for sentinel phrase
       setFeedbackIsGibberish(feedbackText.includes(GIBBERISH_SENTINEL));
     } catch {
       setFeedback("What landed well:\nYou engaged with the question directly — that confidence matters.\n\nWhat to sharpen:\nAdd a specific example to make your answer more memorable.\n\nTry saying it like this:\nSet the scene briefly, explain what you did, and land on the result. That structure will stick with any interviewer.");
@@ -860,7 +855,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     setLoadingFeedback(false);
   }
 
-  // FIX: retry — clear answer and go back to answering phase without advancing
   function retryAnswer() {
     setAnswer("");
     setFeedback("");
@@ -868,7 +862,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     setPhase("answering");
   }
 
-  // FIX: Save answer with genuine flag based on whether feedback was a gibberish nudge
   function nextQuestion() {
     const isGenuine = !feedbackIsGibberish && answer.trim().length > 0;
     const newAnswers = [...answers, {
@@ -886,7 +879,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
 
-  // FIX: Skip saves with genuine: false since no answer was given
   function skipQuestion() {
     const newAnswers = [...answers, {
       q: questions[currentQ],
@@ -903,7 +895,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
 
-  // FIX: Back button — go to previous question, restore its answer
   function goBack() {
     if (currentQ === 0) return;
     const prevAnswers = [...answers];
@@ -949,7 +940,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px" }}>
-      {/* Progress bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Icon name={cat.icon} size={16} colour={t.inkMid} />
@@ -960,14 +950,12 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       <div style={{ height: 3, background: t.border, borderRadius: 2, marginBottom: 32, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${progress * 100}%`, background: t.accentPop, transition: "width 0.4s ease", borderRadius: 2 }} />
       </div>
-
       <div style={{ marginBottom: 12 }}>
         {questionTypes[currentQ] === "curated"
           ? <Tag colour={cat.colour} textColour={cat.borderColour}>From question bank</Tag>
           : <Tag colour="#fff3f0" textColour={t.accentPop}>From your job description</Tag>
         }
       </div>
-
       <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: `4px solid ${t.accentPop}`, borderRadius: 10, padding: "22px 24px", marginBottom: 24 }}>
         <p style={{ fontSize: 18, fontWeight: 400, lineHeight: 1.55, fontFamily: "'Inter', sans-serif" }}>{questions[currentQ]}</p>
       </div>
@@ -1033,7 +1021,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Btn onClick={getFeedback} disabled={answer.length < 30}>Get coaching →</Btn>
             <Btn variant="outline" onClick={skipQuestion}>Skip question</Btn>
-            {/* FIX: Back button — only shown if not on first question */}
             {currentQ > 0 && (
               <Btn variant="outline" onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Icon name="arrowLeft" size={14} colour={t.inkMid} /> Previous
@@ -1055,7 +1042,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               <RenderMarkdown text={feedback} />
             )}
           </div>
-
           {!loadingFeedback && !feedbackIsGibberish && (
             <div style={{ background: t.surfaceAlt, borderRadius: 8, padding: "10px 14px", marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 8 }}>
               <Icon name="sparkle" size={14} colour={t.inkLight} />
@@ -1064,10 +1050,8 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
               </p>
             </div>
           )}
-
           {!loadingFeedback && (
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              {/* FIX: If gibberish detected, show retry option prominently */}
               {feedbackIsGibberish ? (
                 <>
                   <Btn onClick={retryAnswer} variant="pop" style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1082,7 +1066,6 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
                   <Btn onClick={nextQuestion}>
                     {currentQ + 1 >= questions.length ? "See my summary →" : "Next question →"}
                   </Btn>
-                  {/* FIX: Back button also available from feedback screen */}
                   {currentQ > 0 && (
                     <Btn variant="outline" onClick={goBack} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Icon name="arrowLeft" size={14} colour={t.inkMid} /> Previous
@@ -1107,13 +1090,10 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
 
-  // FIX: Only count answers marked genuine: true
-  // Gibberish answers and skips are both genuine: false
   const genuineCount = answers.filter(a => a.genuine === true).length;
   const totalCount = answers.length;
   const halfOrMore = genuineCount >= Math.ceil(totalCount / 2);
 
-  // FIX: Zero genuine answers — full block, no cheat sheet
   if (genuineCount === 0) {
     return (
       <div className="fade-in" style={{ maxWidth: 520, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
@@ -1192,7 +1172,6 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
         <p style={{ color: t.inkMid, fontStyle: "italic" }}>You answered {genuineCount} of {totalCount} questions.</p>
       </div>
 
-      {/* FIX: Low genuine answer warning — shown when less than half were genuine */}
       {!halfOrMore && (
         <div style={{ background: "#fff8f6", border: `1.5px solid ${t.accentPop}40`, borderRadius: 10, padding: "14px 18px", marginBottom: 20, display: "flex", gap: 12, alignItems: "flex-start" }}>
           <Icon name="warning" size={16} colour={t.accentPop} />
@@ -1224,16 +1203,18 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
       {!feedbackSent ? (
         <div className="fade-in">
           <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Before you go</Tag></div>
-          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Four quick questions.</h3>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Five quick questions.</h3>
           <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
-            This tool is free during beta. In return, we'd love 3 minutes of honest feedback across four quick questions — it directly shapes what gets built next.
+            This tool is free during beta. In return, we'd love 3 minutes of honest feedback across five quick questions — it directly shapes what gets built next.
           </p>
+
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>1. What was the hardest question in today's session?</label>
             <textarea rows={3} onChange={e => setFeedbackText(prev => ({ ...prev, q1: e.target.value }))}
               placeholder="The question that made you think hardest…"
               style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none" }} />
           </div>
+
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>2. Did the coaching feel relevant to your actual role?</label>
             <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
@@ -1251,13 +1232,15 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
               placeholder="Any detail helps — even one sentence…"
               style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none" }} />
           </div>
+
           <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>3. Anything you wished we'd asked you?</label>
             <textarea rows={2} onChange={e => setFeedbackText(prev => ({ ...prev, q3: e.target.value }))}
               placeholder="A question you were expecting but didn't get…"
               style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none" }} />
           </div>
-          <div style={{ marginBottom: 28 }}>
+
+          <div style={{ marginBottom: 24 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>4. Which of these would make you come back to this tool?</label>
             <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 12, fontStyle: "italic" }}>Select all that apply</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1282,6 +1265,32 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
               })}
             </div>
           </div>
+
+          <div style={{ marginBottom: 28 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 4 }}>5. One last thing — optional but really useful.</label>
+            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 14, fontStyle: "italic" }}>Takes 10 seconds. Helps us show others what this is actually like.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.inkMid, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Before this session I felt…</label>
+                <input
+                  type="text"
+                  onChange={e => setFeedbackText(prev => ({ ...prev, q5before: e.target.value }))}
+                  placeholder="e.g. unprepared, nervous, unsure where to start…"
+                  style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, outline: "none", fontFamily: "'Inter', sans-serif" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.inkMid, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Now I feel…</label>
+                <input
+                  type="text"
+                  onChange={e => setFeedbackText(prev => ({ ...prev, q5after: e.target.value }))}
+                  placeholder="e.g. more confident, ready, clearer on what to say…"
+                  style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, outline: "none", fontFamily: "'Inter', sans-serif" }}
+                />
+              </div>
+            </div>
+          </div>
+
           <div style={{ marginBottom: 28 }}>
             <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
               Stay in the loop <span style={{ color: t.inkLight, fontWeight: 400 }}>(optional)</span>
@@ -1302,6 +1311,7 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
               }}
             />
           </div>
+
           <Btn onClick={async () => {
             try {
               const body = new URLSearchParams({
@@ -1311,6 +1321,8 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
                 "q2-detail": feedbackText.q2detail || "",
                 "q3-missing-questions": feedbackText.q3 || "",
                 "q4-features": (feedbackText.q4 || []).join(", "),
+                "q5-before": feedbackText.q5before || "",
+                "q5-after": feedbackText.q5after || "",
                 "email": feedbackText.email || "",
               });
               await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
