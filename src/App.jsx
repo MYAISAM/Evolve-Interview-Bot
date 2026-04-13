@@ -1123,18 +1123,21 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
           max_tokens: 700,
           messages: [{
             role: "user",
-            content: `Create a short, practical interview cheat sheet for this candidate. Warm, direct, confidence-building tone. Under 220 words.
+            content: `Create a short, practical interview cheat sheet for this candidate. Under 220 words.
+
+IMPORTANT CONTEXT: The candidate answered ${genuineCount} out of ${totalCount} questions genuinely.
+${genuineCount <= 2 ? `They answered very few questions. Do NOT generate generic encouragement or false praise. Be honest — acknowledge what little they gave you, tell them plainly the cheat sheet is limited, and point them back to doing the full session. Do not say things like "you showed up" or "your answers show self-awareness" — these are not true based on the input.` : `Warm, direct, confidence-building tone based on what they actually said.`}
 
 Use exactly these 3 sections with these plain text headers followed by a colon. Do not use asterisks, dashes, or any markdown formatting in the headers themselves:
 
 Your strongest moments:
-(2-3 bullet points — use the • character only, not dashes or asterisks)
+(2-3 bullet points — use the • character only, not dashes or asterisks. If answers were very limited, be honest about that rather than inventing strengths.)
 
 Watch out for:
-(2 bullet points max — use the • character only)
+(2 bullet points max — use the • character only. If answers were very limited, include a point about needing to complete a full session.)
 
 Walk in with this:
-(one punchy sentence — the mindset to carry into the room)
+(one punchy sentence — if they did the full session, make it motivating. If they barely answered, make it a direct nudge to come back and do the work properly.)
 
 IMPORTANT: Use ONLY the • character for bullets. Do not use **, *, or - anywhere in your response. Write headers as plain text followed by a colon on its own line.
 
@@ -1176,7 +1179,7 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
         <div style={{ background: "#fff8f6", border: `1.5px solid ${t.accentPop}40`, borderRadius: 10, padding: "14px 18px", marginBottom: 20, display: "flex", gap: 12, alignItems: "flex-start" }}>
           <Icon name="warning" size={16} colour={t.accentPop} />
           <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
-            You only answered {genuineCount} question{genuineCount === 1 ? "" : "s"} this session — the cheat sheet below is based on limited input and may be less specific than usual. Next time, have a go at more questions even if your answers feel rough.
+            <strong style={{ color: t.accentPop }}>You only answered {genuineCount} of {totalCount} questions.</strong> There isn't enough here to give you meaningful coaching — the cheat sheet below is a placeholder, not a real reflection of your prep. The questions you skipped are likely the ones that will come up in the room. Come back and do the full session before your interview.
           </p>
         </div>
       )}
