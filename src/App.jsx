@@ -1334,6 +1334,9 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
           }} variant="pop">
             Send feedback →
           </Btn>
+          <p style={{ fontSize: 11, color: t.inkLight, marginTop: 12, fontStyle: "italic", lineHeight: 1.5 }}>
+            Your answers are used only to generate your coaching and cheat sheet. Nothing is stored or shared. Session ends when you close the tab.
+          </p>
         </div>
       ) : (
         <div className="fade-in" style={{ textAlign: "center", padding: "40px 0" }}>
