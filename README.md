@@ -1,16 +1,28 @@
-# React + Vite
+# AI Evolving You — Interview Coach
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The source code for [coach.aievolvingyou.com](https://coach.aievolvingyou.com).
 
-Currently, two official plugins are available:
+An AI-powered interview coaching tool. Candidates paste a job description, pick a role category, answer questions by voice or text, and receive personalised coaching feedback after each answer. Ends with a cheat sheet summary.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Built in React (Vite), deployed via Netlify. Auto-deploys on every push to main branch.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project docs
 
-## Expanding the ESLint configuration
+All documentation lives in the `docs/` folder:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `QUICK_REFERENCE.md` — start here
+- `PROJECT_PLAN.md` — roadmap and status
+- `BRAND.md` — colours, fonts, design tokens
+- `ARCHITECTURE.md` — tech stack and API setup
+- `PROMPTS.md` — all AI prompts used in the app
+- `DECISIONS.md` — key decisions log
+- `CONTENT_MAP.md` — content strategy and funnels
+- `docs/skills/` — reusable skill files for Claude sessions
+
+---
+
+## Related
+
+- Main site: [aievolvingyou.com](https://aievolvingyou.com)
