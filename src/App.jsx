@@ -33,9 +33,6 @@ function generateToken() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-function generateToken() {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
 
 // ── Design tokens ─────────────────────────────────────────────────
 const t = {
