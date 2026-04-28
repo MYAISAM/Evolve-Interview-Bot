@@ -1103,8 +1103,12 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [currentQ]);
 
   async function buildQuestions() {
-    const shuffled = [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
-
+const shuffled = roleFamily && careerStage
+  ? [
+      ...[...QUESTION_BANK[roleFamily].questions].sort(() => Math.random() - 0.5).slice(0, 2),
+      ...[...QUESTION_BANK[careerStage].questions].sort(() => Math.random() - 0.5).slice(0, 1),
+    ]
+  : [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
     // Build context label for AI — combine role family + career stage if both selected
     const contextLabel = roleFamily && careerStage
       ? `${QUESTION_BANK[roleFamily].label} (${QUESTION_BANK[careerStage].label})`
