@@ -2,6 +2,50 @@ import { useState, useEffect, useRef } from "react";
 
 const API = "/api/anthropic";
 
+// ── Supabase client ───────────────────────────────────────────────
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+async function supabaseInsert(table, data) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Prefer": "return=representation",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    return result[0] || null;
+  } catch (e) {
+    console.error("Supabase insert error:", e);
+    return null;
+  }
+}
+
+async function supabaseUpdate(table, id, data) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify(data),
+    });
+  } catch (e) {
+    console.error("Supabase update error:", e);
+  }
+}
+
+function generateToken() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
 // ── Design tokens ─────────────────────────────────────────────────
 const t = {
   bg: "#ffffff",
@@ -974,6 +1018,7 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   const [onboardingInvalid, setOnboardingInvalid] = useState(false);
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
   const recognitionRef = useRef(null);
+  const sessionIdRef = useRef(null);
   useScrollToTop("coaching");
 
   // Use careerStage bank if selected, otherwise roleFamily bank
@@ -1023,6 +1068,19 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
     const contextLabel = roleFamily && careerStage
       ? `${QUESTION_BANK[roleFamily].label} (${QUESTION_BANK[careerStage].label})`
       : bank.label;
+
+    // ── Create Supabase session row ───────────────────────────────
+    const token = generateToken();
+    const session = await supabaseInsert("coach_sessions", {
+      session_token: token,
+      role_family: roleFamily ? QUESTION_BANK[roleFamily].label : null,
+      career_stage: careerStage ? QUESTION_BANK[careerStage].label : null,
+      questions_answered: 0,
+      completed: false,
+      paid: false,
+    });
+    if (session?.id) sessionIdRef.current = session.id;
+    // ─────────────────────────────────────────────────────────────
 
     try {
       const validationRes = await fetch(API, {
@@ -1188,7 +1246,19 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     setAnswer("");
     setFeedback("");
     setFeedbackIsGibberish(false);
-    if (currentQ + 1 >= questions.length) { onFinish(newAnswers); }
+
+    const isLastQuestion = currentQ + 1 >= questions.length;
+
+    // ── Update Supabase session ───────────────────────────────────
+    if (sessionIdRef.current) {
+      supabaseUpdate("coach_sessions", sessionIdRef.current, {
+        questions_answered: newAnswers.filter(a => a.genuine).length,
+        completed: isLastQuestion,
+      });
+    }
+    // ─────────────────────────────────────────────────────────────
+
+    if (isLastQuestion) { onFinish(newAnswers); }
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
 
