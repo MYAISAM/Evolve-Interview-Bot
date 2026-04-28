@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from "react";
 const API = "/api/anthropic";
 
 // ── Supabase client ───────────────────────────────────────────────
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = "https://fdwldyhzoojeoapmqwxv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkd2xkeWh6b29qZW9hcG1xd3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODcwMjAsImV4cCI6MjA1OTM2MzAyMH0.PRL7W4jzMS9l-B4xJI4NYRp12sVR0ylfc2xWN_E2qL4";
 
 async function supabaseInsert(table, data) {
   try {
