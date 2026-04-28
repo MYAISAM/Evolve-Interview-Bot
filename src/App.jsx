@@ -1,24 +1,18 @@
 import { useState, useEffect, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 const API = "/api/anthropic";
 
 // ── Supabase client ───────────────────────────────────────────────
-const SUPABASE_URL = "https://fdwldyhzoojeoapmqwxv.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkd2xkeWh6b29qZW9hcG1xd3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODcwMjAsImV4cCI6MjA1OTM2MzAyMH0.PRL7W4jzMS9l-B4xJI4NYRp12sVR0ylfc2xWN_E2qL4";
+const supabase = createClient(
+  "https://fdwldyhzoojeoapmqwxv.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkd2xkeWh6b29qZW9hcG1xd3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODcwMjAsImV4cCI6MjA1OTM2MzAyMH0.PRL7W4jzMS9l-B4xJI4NYRp12sVR0ylfc2xWN_E2qL4"
+);
 
 async function supabaseInsert(table, data) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-        "Prefer": "return=representation",
-      },
-      body: JSON.stringify(data),
-    });
-    const result = await res.json();
+    const { data: result, error } = await supabase.from(table).insert(data).select();
+    if (error) { console.error("Supabase insert error:", error); return null; }
     return result[0] || null;
   } catch (e) {
     console.error("Supabase insert error:", e);
@@ -28,18 +22,15 @@ async function supabaseInsert(table, data) {
 
 async function supabaseUpdate(table, id, data) {
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify(data),
-    });
+    const { error } = await supabase.from(table).update(data).eq("id", id);
+    if (error) console.error("Supabase update error:", error);
   } catch (e) {
     console.error("Supabase update error:", e);
   }
+}
+
+function generateToken() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
 function generateToken() {
