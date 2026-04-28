@@ -129,7 +129,7 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
 // 14 categories — 8 Role Families + 5 Career Stages + 1 Specialist
 // 25 questions per category = 350 questions total
 
-const ROLE_FAMILIES = ["commercial", "people_talent", "product_tech", "marketing", "finance_ops", "hr_people", "project_programme", "general"];
+const ROLE_FAMILIES = ["commercial", "people_talent", "product_tech", "marketing", "finance_ops", "hr_people", "project_programme", "general", "tough_questions"];
 const CAREER_STAGES = ["graduate", "experienced", "career_changer", "returner", "mindset"];
 
 const QUESTION_BANK = {
