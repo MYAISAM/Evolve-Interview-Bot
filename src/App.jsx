@@ -86,7 +86,7 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
 // 25 questions per category = 350 questions total
 
 const ROLE_FAMILIES = ["commercial", "people_talent", "product_tech", "marketing", "finance_ops", "hr_people", "project_programme", "general"];
-const CAREER_STAGES = ["graduate", "experienced", "career_changer", "returner", "mindset", "tough_questions"];
+const CAREER_STAGES = ["graduate", "experienced", "career_changer", "returner", "mindset"];
 
 const QUESTION_BANK = {
 
@@ -1450,6 +1450,18 @@ Watch out for:
 
 Walk in with this:
 (one punchy sentence — if they did the full session, make it motivating. If they barely answered, make it a direct nudge to come back and do the work properly.)
+
+ARTICLE LINKS INSTRUCTION: At the end of the cheat sheet, after the three sections, add a short line break then write exactly this header:
+Go deeper:
+Then include 1-3 relevant links from the list below — only include ones that are genuinely relevant to what the candidate struggled with or what their role needs. Use plain text with the URL in brackets. Do not include all of them — be selective.
+
+Available articles:
+• The STAR Method — how to structure any behavioural answer: https://aievolvingyou.com/resources/star-method
+• How to answer "What's your biggest weakness?": https://aievolvingyou.com/resources/weakness-question
+• The four types of interview question (and how to handle each): https://aievolvingyou.com/resources/four-types-of-interview-question
+• The specificity principle — why vague answers lose interviews: https://aievolvingyou.com/resources/specificity-principle
+• How to use AI to prepare for interviews: https://aievolvingyou.com/resources/ai-interview-prep
+• How to interview after a long career gap: https://aievolvingyou.com/resources/interviewing-after-long-gap
 
 IMPORTANT: Use ONLY the • character for bullets. Do not use **, *, or - anywhere in your response. Write headers as plain text followed by a colon on its own line.
 
