@@ -660,12 +660,12 @@ function RenderMarkdown({ text, style = {} }) {
             <div key={i} style={{ marginBottom: 8 }}>
               <a href={url} target="_blank" rel="noopener noreferrer" style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                background: "#fff3ec", color: t.accentPop, borderRadius: 6,
+                background: t.tag, color: t.accentGreen, borderRadius: 6,
                 padding: "7px 14px", fontSize: 13, fontWeight: 600,
-                textDecoration: "none", border: `1px solid ${t.accentPop}30`,
+                textDecoration: "none", border: `1px solid ${t.accentGreen}30`,
                 transition: "all 0.15s",
               }}>
-                <Icon name="arrow" size={13} colour={t.accentPop} />
+                <Icon name="arrow" size={13} colour={t.accentGreen} />
                 {label}
               </a>
             </div>
@@ -679,12 +679,12 @@ function RenderMarkdown({ text, style = {} }) {
             <div key={i} style={{ marginBottom: 8 }}>
               <a href={labeledUrl[2]} target="_blank" rel="noopener noreferrer" style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                background: "#fff3ec", color: t.accentPop, borderRadius: 6,
+                background: t.tag, color: t.accentGreen, borderRadius: 6,
                 padding: "7px 14px", fontSize: 13, fontWeight: 600,
-                textDecoration: "none", border: `1px solid ${t.accentPop}30`,
+                textDecoration: "none", border: `1px solid ${t.accentGreen}30`,
                 transition: "all 0.15s",
               }}>
-                <Icon name="arrow" size={13} colour={t.accentPop} />
+                <Icon name="arrow" size={13} colour={t.accentGreen} />
                 {labeledUrl[1]}
               </a>
             </div>
@@ -1633,6 +1633,45 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
           <RenderMarkdown text={cheatSheet} />
         )}
       </div>
+
+      {/* ── Q&A Recap ─────────────────────────────────────────── */}
+      {answers.filter(a => a.genuine).length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 12 }}>
+            <Tag colour={t.surfaceAlt} textColour={t.inkMid}>Your session recap</Tag>
+          </div>
+          <p style={{ fontSize: 13, color: t.inkMid, marginBottom: 16, fontStyle: "italic", lineHeight: 1.5 }}>
+            Every question you answered — with the coaching point to take into your prep.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {answers.filter(a => a.genuine).map((item, i) => (
+              <div key={i} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ borderLeft: `4px solid ${t.accentGreen}`, padding: "14px 18px", background: t.bg }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: t.inkMid, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Q{i + 1}</p>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: t.ink, lineHeight: 1.5 }}>{item.q}</p>
+                </div>
+                <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}` }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Your answer</p>
+                  <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, fontStyle: "italic" }}>{item.a}</p>
+                </div>
+                {item.feedback && (
+                  <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: "#fffdf7" }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: t.accentPop, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Key coaching point</p>
+                    <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6 }}>
+                      {item.feedback.split("\n").find(l => l.toLowerCase().includes("sharpen") || l.toLowerCase().includes("improve"))
+                        ? item.feedback.split("\n").slice(
+                            item.feedback.split("\n").findIndex(l => l.toLowerCase().includes("sharpen")) + 1
+                          ).find(l => l.trim().length > 20) || item.feedback.split("\n").find(l => l.trim().length > 20)
+                        : item.feedback.split("\n").find(l => l.trim().length > 20)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* ────────────────────────────────────────────────────────── */}
 
       <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
         <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
