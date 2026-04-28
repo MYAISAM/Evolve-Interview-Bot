@@ -82,240 +82,301 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
 }
 
 // ── Question Bank ─────────────────────────────────────────────────
+// 14 categories — 8 Role Families + 5 Career Stages + 1 Specialist
+// 25 questions per category = 350 questions total
+
+const ROLE_FAMILIES = ["commercial", "people_talent", "product_tech", "marketing", "finance_ops", "hr_people", "project_programme", "general"];
+const CAREER_STAGES = ["graduate", "experienced", "career_changer", "returner", "mindset", "tough_questions"];
+
 const QUESTION_BANK = {
-  sales: {
-    label: "Sales & Business Development",
+
+  // ── ROLE FAMILIES ────────────────────────────────────────────────
+
+  commercial: {
+    label: "Commercial & Revenue",
+    sublabel: "Sales, Account Management, Customer Success",
     icon: "sales",
     colour: "#e8f0fe",
     borderColour: "#1d4e89",
     questions: [
-      "Walk me through a deal you're most proud of closing — what made it work?",
-      "Tell me about a time you lost a deal you thought you'd win. What did you learn?",
-      "How do you build rapport with a prospect who is initially cold or resistant?",
-      "Describe your process for managing a complex, multi-stakeholder sale.",
-      "How do you handle objections around price?",
-      "What does your pipeline management process look like day to day?",
-      "Tell me about a time you exceeded your targets. What drove that performance?",
-      "How do you stay motivated during a slow pipeline period?",
-      "Describe a time you had to adapt your sales approach for a new market or product.",
-      "What's your approach to researching a prospect before a first call?",
-      "Tell me about a time you exceeded your sales target — what drove that result?",
-      "Describe a situation where a deal fell through at the last moment. What did you learn?",
-      "How would you approach a prospect who has gone cold after initial interest?",
-      "Tell me about a time you built a long-term relationship with a difficult client.",
-      "How do you prioritise accounts when your pipeline is full?",
-      "What motivates you most about working in sales?",
-      "Tell me about a time you collaborated with marketing or product to close a deal.",
-      "How would you handle being behind on your target halfway through the quarter?",
-      "Give an example of when you had to persuade a client to choose you over a competitor.",
-      "What's the toughest negotiation you've been part of, and how did you handle it?",
-      "Tell me about a time you identified an upsell or cross-sell opportunity.",
-      "How do you handle rejection in sales without it affecting your confidence?",
-      "Describe a time you challenged a client's initial assumptions — what happened?",
-      "Tell me about a time you used data to improve your sales performance.",
-      "Describe your proudest sales accomplishment and why it matters to you.",
+      "Walk me through a deal or account win you're most proud of — what made it work?",
+      "Tell me about a time you lost a deal or a customer you thought you'd keep. What did you learn?",
+      "How do you build rapport with a prospect or client who is initially cold or resistant?",
+      "Describe your process for managing a complex, multi-stakeholder relationship.",
+      "How do you handle objections — whether around price, timing, or fit?",
+      "Tell me about a time you exceeded your targets. What specifically drove that performance?",
+      "How do you stay motivated during a slow pipeline or a difficult quarter?",
+      "Describe a time you had to adapt your approach for a new market, product, or buyer type.",
+      "Tell me about a time you turned a customer around from being at risk of churning.",
+      "How do you identify growth or expansion opportunities without being pushy?",
+      "Walk me through how you prepare for a high-stakes client meeting or renewal conversation.",
+      "Describe a time you collaborated with another team — marketing, product, or ops — to win or retain a customer.",
+      "How do you use data to manage your accounts or pipeline day to day?",
+      "Tell me about a time you had to deliver difficult news to a client. How did you handle it?",
+      "How do you prioritise your time when you have multiple accounts or opportunities competing for attention?",
+      "Tell me about the toughest negotiation you've been part of — what happened?",
+      "Describe a situation where you identified an upsell or cross-sell opportunity and acted on it.",
+      "How do you measure the health of an account or relationship beyond surface-level metrics?",
+      "Tell me about a time you had to rebuild trust with a client after something went wrong.",
+      "How would you manage a renewal where usage has been low and the client seems disengaged?",
+      "Describe a time you challenged a client's assumptions — what was the outcome?",
+      "Tell me about a time you used data or insight to change a client's thinking.",
+      "What does your process look like for onboarding a new client or account?",
+      "How would you handle being significantly behind on your number halfway through the quarter?",
+      "Describe your proudest commercial accomplishment and why it matters to you.",
     ],
   },
-  cs: {
-    label: "Customer Success",
-    icon: "cs",
-    colour: "#e8f4e8",
-    borderColour: "#2d6a4f",
-    questions: [
-      "Tell me about a customer you turned around from being at risk of churn.",
-      "How do you build a success plan with a new customer in the first 90 days?",
-      "Describe a time you had to deliver bad news to a customer. How did you handle it?",
-      "How do you manage a portfolio of accounts with very different needs and maturity levels?",
-      "Tell me about a time a customer pushed back on your advice. What did you do?",
-      "How do you identify expansion opportunities without being pushy?",
-      "Walk me through how you prepare for a quarterly business review.",
-      "Describe a time you collaborated with sales or product to solve a customer problem.",
-      "How do you measure the health of your accounts?",
-      "Tell me about the most complex onboarding you've managed.",
-      "How would you handle a client threatening to cancel their contract?",
-      "Describe a time you worked with a customer to achieve a measurable outcome.",
-      "What attracted you to customer success as a career?",
-      "How do you balance customer needs with internal company policy?",
-      "Tell me about a time you identified an opportunity to improve the customer experience.",
-      "How do you help drive product adoption among reluctant users?",
-      "Give an example of when you collaborated cross-functionally for a client outcome.",
-      "How do you measure success in a customer success role beyond NPS?",
-      "Describe a time you had to manage a major escalation.",
-      "How would you manage a renewal conversation where usage has been low?",
-      "Tell me about a time you improved retention or reduced churn across your portfolio.",
-      "How do you handle conflicting feedback from multiple customers at once?",
-      "Describe a situation where you identified an upsell through relationship building.",
-      "How would you onboard a new enterprise client with multiple stakeholders?",
-      "Share an example of when data helped you improve customer outcomes.",
-    ],
-  },
-  recruitment: {
-    label: "Recruitment & Talent",
+
+  people_talent: {
+    label: "People & Talent",
+    sublabel: "Recruitment, Talent Acquisition, Sourcing",
     icon: "recruitment",
     colour: "#fff8e8",
     borderColour: "#b8860b",
     questions: [
-      "Tell me about a hard-to-fill role you've successfully closed. What was your approach?",
+      "Tell me about a hard-to-fill role you successfully closed. What was your approach?",
       "How do you build a talent pipeline for roles before they're open?",
       "Describe a time you pushed back on a hiring manager's brief. What happened?",
-      "How do you ensure your process is inclusive and reduces bias?",
+      "How do you ensure your hiring process is inclusive and actively reduces bias?",
       "Tell me about a hire you made that didn't work out. What did you learn?",
-      "How do you assess culture fit without it becoming a proxy for bias?",
-      "Walk me through how you manage candidate experience across a long process.",
+      "How do you assess cultural contribution without it becoming a proxy for bias?",
+      "Walk me through how you manage candidate experience across a long or complex process.",
       "Describe a time you had to fill multiple roles simultaneously under pressure.",
-      "How do you use data to improve your recruitment process?",
-      "Tell me about a time you had to sell a role to a passive candidate.",
-      "How would you handle a hiring manager who disagrees with your candidate recommendations?",
-      "Describe a sourcing strategy you've used creatively to find hard-to-reach talent.",
-      "What drew you to a career in recruitment?",
+      "How do you use data to improve your recruitment process or results?",
+      "Tell me about a time you had to sell a role to a highly passive candidate.",
+      "How would you handle a hiring manager who consistently disagrees with your recommendations?",
+      "Describe a sourcing strategy you've used creatively to reach hard-to-find talent.",
+      "What drew you to a career in recruitment or talent acquisition?",
       "How would you improve time-to-hire without compromising on quality?",
-      "Tell me about a time you dealt with a candidate withdrawing late in the process.",
-      "Give an example of when you managed multiple urgent vacancies simultaneously.",
-      "How would you handle a candidate failing to meet expectations after joining?",
-      "Tell me about a time you influenced a difficult or sceptical stakeholder.",
-      "How would you approach hiring in a new market with little brand recognition?",
-      "Give an example of when data helped you improve the recruitment process.",
-      "Tell me about a time you used networking to source top talent.",
-      "Describe a time you had to manage a hiring freeze or sudden change in priorities.",
-      "How would you navigate salary negotiations that exceed the budget?",
-      "Tell me about a time you implemented a new hiring process or tool.",
-      "How do you maintain relationships with candidates for future opportunities?",
+      "Tell me about a time a candidate withdrew late in the process — how did you handle it?",
+      "How would you approach hiring in a new market where your employer brand is unknown?",
+      "Describe a time you navigated a salary negotiation that was outside your approved budget.",
+      "Tell me about a time you implemented a new process or tool that improved hiring outcomes.",
+      "How do you maintain relationships with candidates who weren't selected for future opportunities?",
+      "Describe a time you had to manage a hiring freeze or sudden change in headcount plans.",
+      "How would you handle a situation where a finalist candidate receives a counter-offer?",
+      "Tell me about a time you influenced a senior stakeholder to change their approach to hiring.",
+      "How do you keep candidates engaged across a lengthy or multi-stage process?",
+      "Describe a time you contributed to improving diversity outcomes in a hiring process.",
+      "What does great talent partnership with the business look like to you?",
     ],
   },
-  product: {
-    label: "Product Management",
+
+  product_tech: {
+    label: "Product & Technology",
+    sublabel: "Product Management, Engineering, UX",
     icon: "product",
     colour: "#fce8f0",
     borderColour: "#8b1a4a",
     questions: [
-      "Walk me through a product decision you're most proud of — from insight to launch.",
-      "Tell me about a time you had to say no to a feature request. How did you handle it?",
+      "Walk me through a product decision or build you're most proud of — from insight to outcome.",
+      "Tell me about a time you had to say no to a feature request or stakeholder ask. How did you handle it?",
       "How do you decide what to prioritise when everything feels urgent?",
-      "Describe a time a product you shipped didn't land as expected. What did you do?",
+      "Describe a time something you shipped didn't land as expected. What did you do?",
       "How do you balance short-term fixes with long-term strategic work?",
-      "Tell me about how you build alignment between engineering, design, and commercial teams.",
-      "How do you validate an idea before investing in building it?",
-      "Describe your approach to writing a product requirements document.",
-      "Tell me about a time you used data to challenge an assumption about your users.",
-      "How do you keep up with what customers actually need day to day?",
-      "Tell me about a time you prioritised conflicting stakeholder requests — how did you decide?",
-      "How would you handle launching a product that's running behind schedule?",
-      "Describe a product decision you regret and what you'd do differently.",
-      "Tell me about a time you said no to a feature and had to defend that decision.",
-      "How would you manage a team divided over roadmap priorities?",
-      "Give an example of when you used customer feedback to change direction on a product.",
-      "How do you personally balance data-driven and intuitive decision making?",
-      "How would you handle a stakeholder demanding an unrealistic delivery timeline?",
-      "Tell me about a time you influenced without direct authority.",
-      "How would you approach gathering requirements for an unfamiliar product area?",
-      "Describe a time you led a cross-functional team through a major release.",
-      "Tell me about a product you launched successfully — what made it work?",
-      "How would you deal with declining user engagement metrics?",
-      "Describe a time you managed significant trade-offs between quality and speed.",
-      "How would you rebuild trust with users after a failed product launch?",
+      "Tell me about how you build alignment between technical, design, and commercial teams.",
+      "How do you validate an idea before committing to building it?",
+      "Describe your approach to writing a spec, brief, or technical requirement.",
+      "Tell me about a time you used data to challenge an assumption about users or behaviour.",
+      "How do you stay connected to what customers or users actually need?",
+      "Describe a time you had to make a significant technical or product call with incomplete information.",
+      "Tell me about a time you worked across teams to resolve a complex technical or product problem.",
+      "How do you approach code reviews, design critiques, or product feedback sessions?",
+      "Describe a situation where technical debt significantly influenced your product decisions.",
+      "Tell me about a time you dealt with a production incident or critical bug — what did you do?",
+      "How do you communicate technical complexity to non-technical stakeholders?",
+      "Describe a time you advocated for the user or customer when business pressure pushed in a different direction.",
+      "Tell me about a time you had to learn a new technology, tool, or domain quickly.",
+      "How do you think about quality — and how do you maintain it under tight deadlines?",
+      "Describe a time you worked in an unfamiliar codebase or product area. How did you approach it?",
+      "Tell me about a time you proactively identified and prevented a problem before it escalated.",
+      "How do you make sure the team stays focused and unblocked during a complex build?",
+      "Describe a situation where you had to change direction mid-build. How did you manage it?",
+      "Tell me about a time you contributed to improving how your team works, not just what it builds.",
+      "What does good product or engineering culture look like to you?",
     ],
   },
-  engineering: {
-    label: "Engineering (Behavioural)",
-    icon: "engineering",
-    colour: "#f0f0fe",
-    borderColour: "#3730a3",
+
+  marketing: {
+    label: "Marketing & Brand",
+    sublabel: "Marketing, Content, Growth, Brand Strategy",
+    icon: "target",
+    colour: "#e8fef0",
+    borderColour: "#1a7a4a",
     questions: [
-      "Tell me about a technically complex problem you solved — walk me through your thinking.",
-      "Describe a time you had to make a technical decision with incomplete information.",
-      "How do you approach code review — giving and receiving feedback?",
-      "Tell me about a time you disagreed with a technical decision made by your team. What did you do?",
-      "How do you balance writing clean code with shipping fast?",
-      "Describe a time a production issue happened on your watch. How did you respond?",
-      "How do you approach learning a new codebase or technology?",
-      "Tell me about a project that went off track. What was your role in getting it back?",
-      "How do you communicate technical concepts to non-technical stakeholders?",
-      "Describe how you approach mentoring or supporting less experienced engineers.",
-      "Tell me about a time you resolved a conflict within your engineering team.",
-      "How would you handle being assigned unclear or incomplete project requirements?",
-      "Describe a time you gave constructive feedback to a teammate.",
-      "Tell me about a project where communication was essential to its success.",
-      "How would you respond to a missed deadline caused by external dependencies?",
-      "What kind of engineering culture do you do your best work in?",
-      "How would you support a junior engineer who is struggling with a task?",
-      "Tell me about how you've contributed to improving processes on your team.",
-      "Describe a time you worked closely with non-technical stakeholders.",
-      "How would you handle a technical disagreement with your manager?",
-      "Tell me about a time you learned from a production incident or outage.",
-      "Describe a situation where teamwork made a project significantly more successful.",
-      "How would you maintain quality under tight deadlines?",
-      "Tell me about a time you proactively prevented a problem before it escalated.",
-      "Describe a time you worked in an unfamiliar codebase or system — how did you approach it?",
+      "Walk me through a campaign or piece of work you're most proud of — from brief to result.",
+      "Tell me about a time a campaign or strategy didn't perform as expected. What did you learn?",
+      "How do you approach building a brand story that resonates with a specific audience?",
+      "Describe how you balance creative instinct with performance data in your work.",
+      "Tell me about a time you had to make a case for a marketing investment to a sceptical stakeholder.",
+      "How do you approach audience research and insight before launching a new campaign?",
+      "Describe a time you had to work with a very limited budget. What did you prioritise?",
+      "Tell me about a time you collaborated with sales, product, or another team to drive a shared outcome.",
+      "How do you measure the effectiveness of brand or awareness activity?",
+      "Describe a time you identified a growth or acquisition opportunity others had missed.",
+      "How do you approach content strategy — what makes content genuinely useful rather than noise?",
+      "Tell me about a time you managed multiple campaigns or projects simultaneously under pressure.",
+      "How do you stay on top of trends and channel shifts without chasing every new thing?",
+      "Describe a time you had to adapt messaging quickly due to market, cultural, or competitive changes.",
+      "Tell me about a time you used data or testing to improve a piece of marketing significantly.",
+      "How do you think about the relationship between short-term performance and long-term brand building?",
+      "Describe a situation where you had to manage external agencies or creative partners.",
+      "Tell me about a time you built or refreshed a brand from the ground up.",
+      "How do you approach SEO, organic growth, or distribution as part of your marketing thinking?",
+      "Describe a time you had to communicate a complex or sensitive topic clearly to a broad audience.",
+      "Tell me about a launch you planned and executed — what went well and what would you do differently?",
+      "How do you build a community or audience around a brand rather than just broadcasting at them?",
+      "Describe a time you turned customer insight or feedback directly into marketing output.",
+      "Tell me about a time you had to defend or evolve a brand position under pressure.",
+      "What does truly great marketing look like to you — and give me an example from your own work.",
     ],
   },
+
+  finance_ops: {
+    label: "Finance & Operations",
+    sublabel: "Finance, Accounting, Operations, Supply Chain",
+    icon: "book",
+    colour: "#eef4fe",
+    borderColour: "#2c4a9e",
+    questions: [
+      "Walk me through a piece of financial analysis or operational improvement you're proud of.",
+      "Tell me about a time you identified a significant inefficiency or cost-saving opportunity.",
+      "How do you manage competing priorities when multiple stakeholders need your support simultaneously?",
+      "Describe a time you had to present financial or operational data to a non-technical audience.",
+      "Tell me about a time a forecast or plan was significantly off. What happened and what did you learn?",
+      "How do you build financial models or operational processes that are robust enough to handle real-world complexity?",
+      "Describe a time you worked cross-functionally to improve a process that crossed team boundaries.",
+      "Tell me about a time you had to manage a supplier, vendor, or partner relationship through a difficult period.",
+      "How do you approach budgeting and resource allocation when demand exceeds capacity?",
+      "Describe a situation where you used data to drive a significant operational or financial decision.",
+      "Tell me about a time you managed risk — financial, operational, or compliance — under pressure.",
+      "How do you stay on top of accuracy and detail when working at pace?",
+      "Describe a time you implemented or improved a financial control or operational system.",
+      "Tell me about a time you had to balance short-term cost pressures with long-term investment needs.",
+      "How do you build relationships with stakeholders who don't naturally think in financial or operational terms?",
+      "Describe a time you had to navigate ambiguity where the data wasn't clear enough to give a definitive answer.",
+      "Tell me about a time you supported a significant business decision with financial modelling or analysis.",
+      "How do you approach month-end, quarter-end, or audit processes to maintain quality under time pressure?",
+      "Describe a situation where you identified a compliance or governance risk and how you addressed it.",
+      "Tell me about a time you improved forecasting accuracy or reduced variance in a plan.",
+      "How do you manage operational performance when things outside your control go wrong?",
+      "Describe a time you had to push back on a business request because it wasn't financially or operationally viable.",
+      "Tell me about a time you led or contributed to a significant change programme or transformation.",
+      "How do you keep your team or process aligned during periods of rapid growth or change?",
+      "What does operational or financial excellence look like to you in practice?",
+    ],
+  },
+
+  hr_people: {
+    label: "HR & People Ops",
+    sublabel: "HR Generalist, L&D, Employee Relations, People Ops",
+    icon: "cs",
+    colour: "#f0feee",
+    borderColour: "#2d6a2f",
+    questions: [
+      "Tell me about a time you supported an employee or manager through a particularly difficult situation.",
+      "How do you balance being an advocate for employees while also representing the business?",
+      "Describe a time you had to manage a complex employee relations case. What was your approach?",
+      "Tell me about a time you introduced or improved a people process that had a measurable impact.",
+      "How do you build trust with employees across different levels of an organisation?",
+      "Describe a situation where you had to deliver a difficult message to an employee or team.",
+      "Tell me about a time you worked with leadership to shape or improve culture.",
+      "How do you approach performance management in a way that's fair, consistent, and constructive?",
+      "Describe a time you used data or people analytics to influence a people decision.",
+      "Tell me about a time you had to navigate a situation where policy and common sense were in tension.",
+      "How do you design or facilitate learning and development that actually changes behaviour?",
+      "Describe a situation where you had to manage a grievance or disciplinary process under pressure.",
+      "Tell me about a time you supported organisational change and helped people through it.",
+      "How do you approach onboarding to set new employees up for long-term success?",
+      "Describe a time you identified a capability gap in the organisation and addressed it.",
+      "Tell me about a time you had to give honest feedback to a senior leader or manager.",
+      "How do you stay current with employment law and translate it into practical advice?",
+      "Describe a time you contributed to improving diversity, equity, or inclusion outcomes.",
+      "Tell me about a time a people initiative you championed didn't land as expected. What did you learn?",
+      "How do you prioritise when you're supporting multiple business units with competing needs?",
+      "Describe a situation where you helped a manager become more effective in their role.",
+      "Tell me about a time you had to work through a restructure, redundancy, or TUPE situation.",
+      "How do you make sure HR is seen as a strategic partner and not just a compliance function?",
+      "Describe a time you built an HR process or policy from scratch for a growing organisation.",
+      "What does a high-performing people function look like to you?",
+    ],
+  },
+
+  project_programme: {
+    label: "Project & Programme Management",
+    sublabel: "Project Management, PMO, Programme Delivery",
+    icon: "film",
+    colour: "#fef4e8",
+    borderColour: "#9e5a1a",
+    questions: [
+      "Walk me through a project or programme you're most proud of delivering — what made it work?",
+      "Tell me about a project that went off track. What happened and how did you recover it?",
+      "How do you manage scope creep when stakeholders keep adding to a project mid-delivery?",
+      "Describe how you approach stakeholder mapping and engagement at the start of a new project.",
+      "Tell me about a time you had to deliver under significant time, budget, or resource constraints.",
+      "How do you build and maintain team momentum across a long or complex programme?",
+      "Describe a time you had to escalate a risk or issue. How did you manage it?",
+      "Tell me about a time you managed multiple workstreams or projects simultaneously.",
+      "How do you approach project planning — what does good look like to you?",
+      "Describe a situation where a key dependency outside your control threatened delivery. What did you do?",
+      "Tell me about a time you had to manage a difficult team dynamic on a project.",
+      "How do you ensure lessons from one project are actually applied to the next?",
+      "Describe a time you had to get buy-in from a reluctant or resistant stakeholder.",
+      "Tell me about a time a project delivered on time and budget but still didn't meet expectations. What did you learn?",
+      "How do you balance following a methodology with being pragmatic about what actually works?",
+      "Describe a time you introduced a new tool, process, or practice that improved project delivery.",
+      "Tell me about a time you had to make a significant project decision without all the information you needed.",
+      "How do you communicate progress and risk to senior stakeholders who aren't close to the detail?",
+      "Describe a situation where you had to reprioritise significantly mid-project due to a change in business direction.",
+      "Tell me about a time you worked across multiple teams or organisations to deliver a shared outcome.",
+      "How do you build a project culture where the team flags problems early rather than hiding them?",
+      "Describe a time you managed a technology or systems implementation project.",
+      "Tell me about a time you had to close down or pivot a project that wasn't delivering value.",
+      "How do you measure success on a project beyond on-time and on-budget delivery?",
+      "What does great programme leadership look like to you?",
+    ],
+  },
+
   general: {
     label: "General / Any Role",
+    sublabel: "Universal questions for any job or sector",
     icon: "general",
     colour: "#f5f2eb",
     borderColour: "#6b6660",
     questions: [
       "Tell me about yourself and what's brought you to this point in your career.",
-      "What are you looking for in your next role that you don't have now?",
+      "What are you looking for in your next role that you don't currently have?",
       "Describe a time you had to work with someone whose style was very different from yours.",
-      "Tell me about a piece of feedback that changed how you work.",
-      "What does good look like to you in this type of role?",
-      "Describe a time you had to manage competing priorities under pressure.",
+      "Tell me about a piece of feedback that genuinely changed how you work.",
+      "What does good look like to you in the kind of role you're applying for?",
+      "Describe a time you had to manage competing priorities under real pressure.",
       "Tell me about something you've taught yourself outside of work.",
       "How do you know when you've done a good job?",
-      "What would your last manager say is your biggest development area?",
+      "What would your last manager say is your biggest development area — and would you agree?",
       "Where do you want to be in three years, and why does this role get you there?",
-      "Tell me about a time you faced a major challenge at work — how did you handle it?",
-      "What kind of work environment helps you perform at your best?",
-      "How would you handle receiving critical feedback from a manager?",
-      "What motivates you to do your best work every day?",
-      "Tell me about a time you went beyond your job description.",
-      "What values do you look for in an employer?",
+      "Tell me about a time you faced a major setback at work. How did you handle it?",
+      "What kind of environment helps you perform at your best?",
+      "How do you handle receiving critical feedback in the moment?",
+      "Tell me about a time you went significantly beyond what was expected of you.",
+      "What values do you look for in an employer — and how do you assess them in an interview process?",
       "Tell me about a time you made a mistake at work and how you handled it.",
-      "How would you deal with a colleague who isn't pulling their weight?",
+      "How would you approach a colleague who isn't pulling their weight on a shared project?",
       "What are you most proud of in your career so far?",
-      "Tell me about a time you handled pressure effectively.",
-      "How would you adapt to a major change in your organisation?",
-      "Tell me about a time you demonstrated leadership without being in a management role.",
-      "How would you respond if you strongly disagreed with a company decision?",
+      "Tell me about a time you demonstrated leadership without having a formal leadership title.",
+      "How would you respond if you strongly disagreed with a decision made above you?",
       "Describe a time you helped improve team morale during a difficult period.",
-      "How would you prioritise your time and tasks in the first 90 days of a new role?",
+      "How would you approach your first 90 days in a new role?",
+      "Tell me about a time you had to adapt quickly to a major change you didn't choose.",
+      "Describe a situation where doing the right thing was harder than doing the easy thing.",
+      "What motivates you to do your best work — and how does this role connect to that?",
     ],
   },
-  softskills: {
-    label: "Mindset & Leadership",
-    icon: "star",
-    colour: "#f0e8fe",
-    borderColour: "#6d28d9",
-    questions: [
-      "Tell me about a time you received feedback that surprised you — what did you learn?",
-      "What's an area of your performance you're actively working to improve, and how?",
-      "Describe a situation where you stepped out of your comfort zone at work.",
-      "How do you usually react when you make a mistake — walk me through it.",
-      "Tell me about a time you sought mentorship or input to develop a new skill.",
-      "What have you learned about yourself from your most recent role or project?",
-      "Describe a situation where you had to unlearn something to succeed.",
-      "Tell me about a time something didn't go as planned — how did you recover?",
-      "Describe a setback that initially felt discouraging but led to long-term growth.",
-      "How do you stay effective when timelines or goals suddenly change?",
-      "Tell me about a time you faced significant pressure — how did you manage it?",
-      "What's the hardest piece of feedback you've ever had to accept?",
-      "How do you maintain motivation when results don't come quickly?",
-      "Tell me about a time you failed at something important — what would you do differently?",
-      "Tell me about a time you worked with someone who had a very different working style.",
-      "Describe a situation where you helped resolve a disagreement within a team.",
-      "Tell me about a time you contributed to a team's success even when you disagreed with the direction.",
-      "How do you build trust and rapport with new teammates quickly?",
-      "Describe a time you had to give feedback that was difficult for someone to hear.",
-      "Tell me about a time your personal values guided a difficult decision at work.",
-      "Describe a time you made a decision that aligned with your integrity, even if it wasn't popular.",
-      "What does purpose mean to you in the context of your career?",
-      "Tell me about a time you motivated others without having formal authority.",
-      "Describe a situation where you influenced a decision or change in direction.",
-      "Tell me about a time you led by example during a period of uncertainty.",
-    ],
-  },
+
+  // ── CAREER STAGES ────────────────────────────────────────────────
+
   graduate: {
     label: "Graduate & Early Careers",
+    sublabel: "First job, internships, placements, apprenticeships",
     icon: "sparkle",
     colour: "#fff0e8",
     borderColour: "#c2410c",
@@ -328,12 +389,12 @@ const QUESTION_BANK = {
       "Tell me about a time you worked as part of a team toward a shared goal.",
       "What extracurricular activities, jobs, or experiences have shaped how you work?",
       "Describe a situation where you had to learn something new quickly under pressure.",
-      "Tell me about a time you took initiative without being asked to.",
-      "How do you handle feedback — give me an example of a time you acted on it.",
+      "Tell me about a time you took initiative without being asked.",
+      "How do you handle feedback — give me an example of a time you acted on it meaningfully.",
       "What's the biggest challenge you've faced so far, and how did you deal with it?",
       "Tell me about a time you disagreed with someone — how did you handle it?",
       "Describe a situation where things didn't go to plan — what did you do?",
-      "What does good teamwork look like to you — give me an example from your experience.",
+      "What does good teamwork look like to you — and give me an example from your experience.",
       "Tell me about a time you had to persuade someone to see your point of view.",
       "How do you stay organised and manage your time when you have a lot on?",
       "Tell me about something you've taught yourself outside of your studies or work.",
@@ -341,12 +402,190 @@ const QUESTION_BANK = {
       "What do you know about this organisation and why does it appeal to you?",
       "Where do you want to be in three to five years, and how does this role fit that?",
       "Tell me about a time you showed resilience when something felt really difficult.",
-      "Describe a situation where you had to adapt quickly to a change.",
+      "Describe a situation where you had to adapt quickly to an unexpected change.",
       "What kind of workplace culture do you think you'd thrive in — and why?",
       "Tell me about a time you contributed something meaningful to a group or community.",
       "What's one thing about yourself that doesn't show up on your CV but matters to you?",
     ],
   },
+
+  experienced: {
+    label: "Experienced Hire",
+    sublabel: "5+ years experience, senior roles, leadership",
+    icon: "star",
+    colour: "#f0e8fe",
+    borderColour: "#6d28d9",
+    questions: [
+      "Walk me through the defining moments of your career so far — what's shaped how you work?",
+      "Tell me about the most complex challenge you've faced in your career and how you navigated it.",
+      "How has your leadership style evolved over the years — and what changed it?",
+      "Describe a time you had to make a high-stakes decision with limited information or time.",
+      "Tell me about a time you led a team through significant change or uncertainty.",
+      "How do you approach building credibility quickly in a new organisation or role?",
+      "Describe a time you had to influence at a senior level without having direct authority.",
+      "Tell me about a time you had to challenge the status quo — what happened?",
+      "How do you develop and retain talented people in your team?",
+      "Describe a situation where you had to balance the needs of your team with the wider business agenda.",
+      "Tell me about a time you turned around a failing team, project, or relationship.",
+      "How do you manage your own development at this stage of your career?",
+      "Describe a time you made a decision that was unpopular but the right call.",
+      "Tell me about a time you built something — a team, a function, a process — from scratch.",
+      "How do you stay close to the detail without micromanaging?",
+      "Describe a situation where you had to manage competing senior stakeholder expectations.",
+      "Tell me about a time you spotted a strategic opportunity others had missed.",
+      "How do you build a culture of accountability without creating a blame culture?",
+      "Describe a time when your values were tested at work — what did you do?",
+      "Tell me about a time you had to let someone go. How did you handle it?",
+      "How do you approach setting direction and priorities for a team or function?",
+      "Describe a time you collaborated across organisations or with external partners to deliver something significant.",
+      "Tell me about a time you had to course-correct a strategy that wasn't working.",
+      "How do you balance being a strategic leader with still being hands-on when it matters?",
+      "What do you know now that you wish you'd known ten years ago?",
+    ],
+  },
+
+  career_changer: {
+    label: "Career Changer",
+    sublabel: "Moving industries, pivoting roles, transitioning sectors",
+    icon: "arrow",
+    colour: "#e8f9fe",
+    borderColour: "#1a7a9e",
+    questions: [
+      "Walk me through what brought you to this career change — what was the turning point?",
+      "How have you prepared yourself for this move — what have you done to bridge the gap?",
+      "What skills from your previous career are most transferable to this role?",
+      "Tell me about a time you had to learn an entirely new skill set or domain from scratch.",
+      "How do you respond to concerns that you lack direct experience in this field?",
+      "Describe what you've done in the past six to twelve months to move toward this new direction.",
+      "Tell me about a problem in your new target field that genuinely excites you — and why.",
+      "How do you explain the value of your background to someone in this industry who doesn't immediately see it?",
+      "Describe a time you succeeded in an environment where you were the least experienced person in the room.",
+      "Tell me about a time you had to convince others to take a chance on you.",
+      "What have you had to let go of in making this change — and how have you made peace with that?",
+      "Describe a situation from your previous career that directly applies to a challenge in this role.",
+      "Tell me about someone in this field you've spoken to or learned from during your transition.",
+      "How do you stay motivated when the learning curve feels steep?",
+      "Describe a time you had to reframe how you see yourself professionally.",
+      "Tell me about a time an outsider perspective gave you an advantage — how might that apply here?",
+      "How do you plan to get up to speed in the first 90 days if you get this role?",
+      "What do you think you'll find hardest about this transition — and how are you preparing for it?",
+      "Tell me about a time you took a calculated risk in your career. What was the outcome?",
+      "How do you handle imposter syndrome when entering unfamiliar territory?",
+      "Describe a time you had to prove yourself in a new context. What worked?",
+      "Tell me about a skill you've developed outside of work that's directly relevant to this role.",
+      "How have you used your network to support this career change?",
+      "What would success look like for you in the first year of this new career path?",
+      "What is it about this particular role and organisation that makes this the right move for you?",
+    ],
+  },
+
+  returner: {
+    label: "Returner to Work",
+    sublabel: "Returning after a career break, parental leave, or time out",
+    icon: "check",
+    colour: "#fef0f8",
+    borderColour: "#9e1a7a",
+    questions: [
+      "Tell me about your career break — what did it involve and what did you take from it?",
+      "How have you kept your skills and knowledge current during your time out?",
+      "What's brought you back to work now — and why this role?",
+      "Describe how you've prepared yourself to return to a professional environment.",
+      "Tell me about a skill or strength you developed during your career break that's relevant to this role.",
+      "How do you plan to manage the transition back to full-time or structured work?",
+      "Describe a time before your break when you performed at your best — what drove that?",
+      "Tell me about a piece of work or project from your career that you're most proud of.",
+      "How do you stay organised and manage your time under competing demands?",
+      "Describe a situation where you had to adapt quickly to significant change.",
+      "Tell me about a time you had to rebuild confidence or capability after a difficult period.",
+      "How do you approach learning and getting up to speed in a new environment?",
+      "Describe a time you demonstrated resilience when things were harder than expected.",
+      "Tell me about a time you led or supported others through a difficult situation.",
+      "How have you stayed connected to your professional field during your break?",
+      "Describe a time you had to balance significant responsibilities across different areas of your life.",
+      "Tell me about a time you showed initiative without being prompted.",
+      "How do you handle uncertainty or ambiguity in a work setting?",
+      "Describe a time you had to persuade or influence someone without having formal authority.",
+      "Tell me about a time you gave or received feedback and how you acted on it.",
+      "How would you approach your first 90 days in this role to rebuild momentum quickly?",
+      "Describe a time you worked as part of a team toward a shared goal — what was your contribution?",
+      "Tell me about something you've learned or developed during your career break that surprised you.",
+      "What kind of support or environment would help you thrive as you return to work?",
+      "Why is this particular role and organisation the right fit for this next chapter?",
+    ],
+  },
+
+  mindset: {
+    label: "Mindset & Leadership",
+    sublabel: "Self-awareness, resilience, values, leading others",
+    icon: "star",
+    colour: "#f0e8fe",
+    borderColour: "#6d28d9",
+    questions: [
+      "Tell me about a time you received feedback that genuinely surprised you — what did you do with it?",
+      "What's an area of your performance you're actively working to improve, and how are you doing it?",
+      "Describe a situation where you stepped well outside your comfort zone at work.",
+      "How do you usually react when you make a significant mistake — walk me through it honestly.",
+      "Tell me about a time you sought mentorship or support to develop a new skill.",
+      "What have you learned about yourself from your most recent role or project?",
+      "Describe a situation where you had to unlearn something to succeed.",
+      "Tell me about a time something went badly wrong — how did you recover?",
+      "Describe a setback that initially felt discouraging but led to genuine long-term growth.",
+      "How do you stay effective when timelines, priorities, or goals suddenly change?",
+      "Tell me about a time you faced significant pressure — how did you manage yourself through it?",
+      "What's the hardest piece of feedback you've ever had to accept — and did you?",
+      "How do you maintain motivation and output when results don't come quickly?",
+      "Tell me about a time you failed at something important. What would you do differently?",
+      "Tell me about a time you worked with someone who had a very different working style — how did you adapt?",
+      "Describe a situation where you helped resolve a real disagreement within a team.",
+      "Tell me about a time you contributed to a team's success even when you disagreed with the direction.",
+      "How do you build trust and rapport with new teammates quickly?",
+      "Describe a time you had to give feedback that was difficult for the other person to hear.",
+      "Tell me about a time your personal values guided a difficult decision at work.",
+      "Describe a time you made a decision that aligned with your integrity, even though it wasn't the popular one.",
+      "What does purpose mean to you in the context of your career — and how does that show up in your work?",
+      "Tell me about a time you motivated others without having formal authority to do so.",
+      "Describe a situation where you influenced a significant decision or change in direction.",
+      "Tell me about a time you led by example during a period of real uncertainty.",
+    ],
+  },
+
+  // ── SPECIALIST ───────────────────────────────────────────────────
+
+  tough_questions: {
+    label: "Tough & Bias-Adjacent Questions",
+    sublabel: "Non-traditional backgrounds, gaps, no degree, social mobility",
+    icon: "warning",
+    colour: "#fef4e8",
+    borderColour: "#c2410c",
+    questions: [
+      "I notice you don't have a degree — how do you make up for that in a competitive field?",
+      "There's a gap in your CV here — can you explain what you were doing during that time?",
+      "Your background is quite different from what we usually hire. Why should we take a chance on you?",
+      "You haven't followed the traditional route into this industry — why not?",
+      "How do you feel your experience compares to candidates who have come through a more conventional path?",
+      "You've moved around a lot — are you someone who finds it hard to commit?",
+      "This role requires working with very senior stakeholders. How does someone with your background handle that?",
+      "You went to a less well-known university — or didn't go at all. How has that shaped you?",
+      "You're applying from a very different sector. Why should we believe you can make that leap?",
+      "Some people might say you're overqualified for this — why are you interested at this level?",
+      "Some people might say you're underqualified for this — what would you say to that?",
+      "You've had quite a non-linear career — walk me through the logic of the choices you've made.",
+      "How do you handle environments where most of your colleagues have very different educational or professional backgrounds to yours?",
+      "This role involves a lot of visibility and presenting to leadership. Is that something you're comfortable with?",
+      "You haven't managed a team before — how do we know you're ready to lead?",
+      "Your most recent role was at a much smaller company — how will you adapt to the scale of this organisation?",
+      "Your most recent role was at a much larger company — how will you adapt to a more resource-constrained environment?",
+      "Can you tell me about a time someone underestimated you because of your background — and what happened?",
+      "How do you respond when you're the only person in the room who doesn't share the same background or experience as everyone else?",
+      "Some of our clients or stakeholders have quite traditional expectations. How do you build credibility with people who might initially question your background?",
+      "You've taken a career break. How do we know you're still sharp and up to date?",
+      "You're quite young for a role at this level — what would you say to those who question your readiness?",
+      "You've been in the same company for a very long time — how do we know you can adapt to a new culture?",
+      "Tell me about a time you had to prove yourself in an environment where you felt like an outsider.",
+      "What's your honest answer to someone who says your route into this field was unconventional — and why does that actually make you stronger?",
+    ],
+  },
+
 };
 
 const ROADMAP = [
@@ -482,7 +721,7 @@ function Landing({ onStart }) {
             Paste any job description, pick your role type, and get coached on the questions most likely to come up — and how to answer them well.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 40 }}>
-            {Object.entries(QUESTION_BANK).map(([key, cat]) => (
+            {Object.entries(QUESTION_BANK).slice(0, 8).map(([key, cat]) => (
               <span key={cat.label} style={{ display: "flex", alignItems: "center", gap: 6, background: cat.colour, border: `1px solid ${cat.borderColour}30`, borderRadius: 20, padding: "5px 14px", fontSize: 13, color: t.ink }}>
                 <Icon name={cat.icon} size={14} colour={cat.borderColour} />
                 {cat.label}
@@ -497,7 +736,7 @@ function Landing({ onStart }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, paddingBottom: 48, textAlign: "center" }}>
         {[
           { n: "6+", label: "Tailored questions per session" },
-          { n: "8", label: "Role categories covered" },
+          { n: "14", label: "Role categories covered" },
           { n: "∞", label: "Sessions during beta" },
         ].map(s => (
           <div key={s.n}>
@@ -544,41 +783,95 @@ function Landing({ onStart }) {
 }
 
 // ── Category Picker ───────────────────────────────────────────────
+// Three-box UX: Role Family (required) → Career Stage (optional) → Job spec (required)
 function CategoryStep({ onNext }) {
-  const [selected, setSelected] = useState(null);
+  const [roleFamily, setRoleFamily] = useState(null);
+  const [careerStage, setCareerStage] = useState(null);
   const [jd, setJd] = useState("");
   useScrollToTop("category");
 
+  // Derive the active category key: career stage takes priority if selected, else role family
+  const activeCategory = careerStage || roleFamily;
+
+  const roleFamilies = ROLE_FAMILIES.map(key => ({ key, ...QUESTION_BANK[key] }));
+  const careerStages = CAREER_STAGES.map(key => ({ key, ...QUESTION_BANK[key] }));
+
   return (
-    <div className="fade-up" style={{ maxWidth: 640, margin: "0 auto", padding: "0 24px" }}>
+    <div className="fade-up" style={{ maxWidth: 680, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 1 of 3</Tag></div>
-      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>What kind of role is this?</h2>
-      <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, fontWeight: 300 }}>We'll blend curated questions with ones tailored to the specific job.</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 32 }}>
-        {Object.entries(QUESTION_BANK).map(([key, cat]) => (
-          <div key={key} className="hover-lift" onClick={() => setSelected(key)} style={{
-            background: selected === key ? cat.colour : t.surface,
-            border: `2px solid ${selected === key ? cat.borderColour : t.border}`,
-            borderRadius: 10, padding: "16px 18px", transition: "all 0.18s",
-            display: "flex", alignItems: "flex-start", gap: 12,
-          }}>
-            <div style={{ marginTop: 2, flexShrink: 0 }}>
-              <Icon name={cat.icon} size={18} colour={selected === key ? cat.borderColour : t.inkMid} />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: t.ink, lineHeight: 1.3 }}>{cat.label}</div>
-              {selected === key && <div style={{ fontSize: 11, color: cat.borderColour, marginTop: 4, fontStyle: "italic", display: "flex", alignItems: "center", gap: 4 }}>
-                <Icon name="check" size={11} colour={cat.borderColour} /> Selected
-              </div>}
-            </div>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>Set up your session</h2>
+      <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 32, fontWeight: 300 }}>Three quick steps — takes less than a minute.</p>
+
+      {/* BOX 1 — Role Family */}
+      <div style={{ background: t.surface, border: `1.5px solid ${roleFamily ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: roleFamily ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {roleFamily ? <Icon name="check" size={12} colour="#fff" /> : <span style={{ fontSize: 12, fontWeight: 700, color: t.inkMid }}>1</span>}
           </div>
-        ))}
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>What kind of role?</span>
+          <span style={{ fontSize: 12, color: t.accentPop, fontWeight: 600 }}>Required</span>
+        </div>
+        <p style={{ fontSize: 12, color: t.inkMid, marginBottom: 14, fontStyle: "italic", marginLeft: 34 }}>Pick the family that best matches the job you're going for.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
+          {roleFamilies.map(({ key, label, sublabel, icon, colour, borderColour }) => (
+            <div key={key} className="hover-lift" onClick={() => setRoleFamily(roleFamily === key ? null : key)} style={{
+              background: roleFamily === key ? colour : t.bg,
+              border: `2px solid ${roleFamily === key ? borderColour : t.border}`,
+              borderRadius: 8, padding: "12px 14px", transition: "all 0.18s",
+              display: "flex", alignItems: "flex-start", gap: 10,
+            }}>
+              <div style={{ marginTop: 2, flexShrink: 0 }}>
+                <Icon name={icon} size={16} colour={roleFamily === key ? borderColour : t.inkMid} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: t.ink, lineHeight: 1.3 }}>{label}</div>
+                <div style={{ fontSize: 11, color: t.inkLight, marginTop: 2, lineHeight: 1.3 }}>{sublabel}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 20 }}>
-        <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-          Paste the job description
-        </label>
-        <p style={{ fontSize: 12, color: t.inkMid, marginBottom: 12, fontStyle: "italic", lineHeight: 1.5 }}>
+
+      {/* BOX 2 — Career Stage */}
+      <div style={{ background: t.surface, border: `1.5px solid ${careerStage ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: careerStage ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {careerStage ? <Icon name="check" size={12} colour="#fff" /> : <span style={{ fontSize: 12, fontWeight: 700, color: t.inkMid }}>2</span>}
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>Where are you in your career?</span>
+          <span style={{ fontSize: 12, color: t.inkLight, fontStyle: "italic" }}>Optional</span>
+        </div>
+        <p style={{ fontSize: 12, color: t.inkMid, marginBottom: 14, fontStyle: "italic", marginLeft: 34 }}>Adds tailored questions for your career stage. Skip if it doesn't apply.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
+          {careerStages.map(({ key, label, sublabel, icon, colour, borderColour }) => (
+            <div key={key} className="hover-lift" onClick={() => setCareerStage(careerStage === key ? null : key)} style={{
+              background: careerStage === key ? colour : t.bg,
+              border: `2px solid ${careerStage === key ? borderColour : t.border}`,
+              borderRadius: 8, padding: "12px 14px", transition: "all 0.18s",
+              display: "flex", alignItems: "flex-start", gap: 10,
+            }}>
+              <div style={{ marginTop: 2, flexShrink: 0 }}>
+                <Icon name={icon} size={16} colour={careerStage === key ? borderColour : t.inkMid} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: t.ink, lineHeight: 1.3 }}>{label}</div>
+                <div style={{ fontSize: 11, color: t.inkLight, marginTop: 2, lineHeight: 1.3 }}>{sublabel}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BOX 3 — Job spec */}
+      <div style={{ background: t.surface, border: `1.5px solid ${jd.length > 50 ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: jd.length > 50 ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {jd.length > 50 ? <Icon name="check" size={12} colour="#fff" /> : <span style={{ fontSize: 12, fontWeight: 700, color: t.inkMid }}>3</span>}
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: t.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>Paste the job description</span>
+          <span style={{ fontSize: 12, color: t.accentPop, fontWeight: 600 }}>Required</span>
+        </div>
+        <p style={{ fontSize: 12, color: t.inkMid, marginBottom: 12, fontStyle: "italic", marginLeft: 34, lineHeight: 1.5 }}>
           Open the job posting, select all the text, copy and paste it here. The more detail you give us, the more specific your questions will be.
         </p>
         <textarea
@@ -586,7 +879,7 @@ function CategoryStep({ onNext }) {
           placeholder="Paste the full job description here…" rows={8}
           style={{
             width: "100%", background: t.bg,
-            border: `1.5px solid ${jd.length > 50 ? t.ink : t.border}`,
+            border: `1.5px solid ${jd.length > 50 ? t.accentGreen : t.border}`,
             borderRadius: 7, padding: "13px 15px", color: t.ink, fontSize: 14, lineHeight: 1.6,
             outline: "none", transition: "border-color 0.2s",
           }}
@@ -597,9 +890,20 @@ function CategoryStep({ onNext }) {
           </p>
         )}
       </div>
-      <Btn onClick={() => onNext({ category: selected, jd })} disabled={!selected || jd.length < 50}>Continue →</Btn>
-      {!selected && <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>Pick a role category above to continue</p>}
-      {selected && jd.length < 50 && <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>Paste the job description to continue</p>}
+
+      <Btn
+        onClick={() => onNext({ category: activeCategory, roleFamily, careerStage, jd })}
+        disabled={!roleFamily || jd.length < 50}
+      >
+        Continue →
+      </Btn>
+
+      {!roleFamily && (
+        <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>Pick a role family above to continue</p>
+      )}
+      {roleFamily && jd.length < 50 && (
+        <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>Paste the job description to continue</p>
+      )}
     </div>
   );
 }
@@ -655,7 +959,7 @@ function AboutStep({ onNext }) {
 }
 
 // ── Coaching Session ──────────────────────────────────────────────
-function CoachingStep({ category, jd, userInfo, onFinish, onBackToAbout }) {
+function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinish, onBackToAbout }) {
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -671,6 +975,9 @@ function CoachingStep({ category, jd, userInfo, onFinish, onBackToAbout }) {
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
   const recognitionRef = useRef(null);
   useScrollToTop("coaching");
+
+  // Use careerStage bank if selected, otherwise roleFamily bank
+  const bank = QUESTION_BANK[category] || QUESTION_BANK[roleFamily];
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -710,8 +1017,12 @@ function CoachingStep({ category, jd, userInfo, onFinish, onBackToAbout }) {
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [currentQ]);
 
   async function buildQuestions() {
-    const bank = QUESTION_BANK[category];
     const shuffled = [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
+
+    // Build context label for AI — combine role family + career stage if both selected
+    const contextLabel = roleFamily && careerStage
+      ? `${QUESTION_BANK[roleFamily].label} (${QUESTION_BANK[careerStage].label})`
+      : bank.label;
 
     try {
       const validationRes = await fetch(API, {
@@ -747,7 +1058,7 @@ Reply with only the word VALID if both are genuine real responses, or INVALID if
           max_tokens: 800,
           messages: [{
             role: "user",
-            content: `You are a senior interviewer with 15 years experience hiring for ${bank.label} roles. Generate exactly 4 interview questions for this specific role.
+            content: `You are a senior interviewer with 15 years experience hiring for ${contextLabel} roles. Generate exactly 4 interview questions for this specific role.
 
 CRITICAL RULES:
 - Read the job description carefully and extract specific requirements, skills, tools, and responsibilities mentioned
@@ -760,7 +1071,7 @@ CRITICAL RULES:
 Job Description:
 ${jd}
 
-Role Category: ${bank.label}
+Role Category: ${contextLabel}
 Candidate background: ${userInfo.background}
 Why they want this role: ${userInfo.why}
 
@@ -820,11 +1131,13 @@ Start with one sentence about your experience, add what you did, and finish with
 
 If the answer IS genuine, continue with your normal coaching below.
 
+${category === "tough_questions" ? `SPECIAL INSTRUCTION: This candidate has chosen to practise tough, bias-adjacent questions. When coaching their answer, focus especially on helping them reframe from defence to quiet confidence. Their non-traditional route, gap, or background is a strength — coach them to own it, not apologise for it.` : ""}
+
 Use what you know about them:
 - Their background: ${userInfo.background}
 - Why they want this role: ${userInfo.why}
 - Their worry going in: ${userInfo.worry || "not specified"}
-- The role they're applying for: ${category} — ${jd.slice(0, 300)}
+- The role they're applying for: ${bank.label} — ${jd.slice(0, 300)}
 
 Give feedback in exactly these 3 sections, using these exact headers:
 
@@ -936,14 +1249,13 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
   }
 
   const progress = questions.length > 0 ? currentQ / questions.length : 0;
-  const cat = QUESTION_BANK[category];
 
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name={cat.icon} size={16} colour={t.inkMid} />
-          <span style={{ fontSize: 13, color: t.inkMid }}>{cat.label}</span>
+          <Icon name={bank.icon} size={16} colour={t.inkMid} />
+          <span style={{ fontSize: 13, color: t.inkMid }}>{bank.label}</span>
         </div>
         <span style={{ fontSize: 13, color: t.inkMid }}>{currentQ + 1} / {questions.length}</span>
       </div>
@@ -952,7 +1264,7 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
       </div>
       <div style={{ marginBottom: 12 }}>
         {questionTypes[currentQ] === "curated"
-          ? <Tag colour={cat.colour} textColour={cat.borderColour}>From question bank</Tag>
+          ? <Tag colour={bank.colour} textColour={bank.borderColour}>From question bank</Tag>
           : <Tag colour="#fff3f0" textColour={t.accentPop}>From your job description</Tag>
         }
       </div>
@@ -1357,11 +1669,16 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
 export default function App() {
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState(null);
+  const [roleFamily, setRoleFamily] = useState(null);
+  const [careerStage, setCareerStage] = useState(null);
   const [jd, setJd] = useState("");
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
 
-  function reset() { setStep(0); setCategory(null); setJd(""); setUserInfo(null); setSessionAnswers([]); }
+  function reset() {
+    setStep(0); setCategory(null); setRoleFamily(null);
+    setCareerStage(null); setJd(""); setUserInfo(null); setSessionAnswers([]);
+  }
 
   return (
     <>
@@ -1382,11 +1699,17 @@ export default function App() {
         </header>
         <main style={{ maxWidth: 720, margin: "0 auto", paddingTop: 40 }}>
           {step === 0 && <Landing onStart={() => setStep(1)} />}
-          {step === 1 && <CategoryStep onNext={({ category: c, jd: j }) => { setCategory(c); setJd(j); setStep(2); }} />}
+          {step === 1 && (
+            <CategoryStep onNext={({ category: c, roleFamily: rf, careerStage: cs, jd: j }) => {
+              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setJd(j); setStep(2);
+            }} />
+          )}
           {step === 2 && <AboutStep onNext={info => { setUserInfo(info); setStep(3); }} />}
           {step === 3 && (
             <CoachingStep
               category={category}
+              roleFamily={roleFamily}
+              careerStage={careerStage}
               jd={jd}
               userInfo={userInfo}
               onFinish={ans => { setSessionAnswers(ans); setStep(4); }}
