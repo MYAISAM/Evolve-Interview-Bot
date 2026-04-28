@@ -650,6 +650,47 @@ function RenderMarkdown({ text, style = {} }) {
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{ height: 8 }} />;
+
+        // Detect lines that are purely a URL — render as a button link
+        const urlOnly = trimmed.match(/^(https?:\/\/[^\s]+)$/);
+        if (urlOnly) {
+          const url = urlOnly[1];
+          const label = url.replace("https://", "").replace("http://", "");
+          return (
+            <div key={i} style={{ marginBottom: 8 }}>
+              <a href={url} target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "#fff3ec", color: t.accentPop, borderRadius: 6,
+                padding: "7px 14px", fontSize: 13, fontWeight: 600,
+                textDecoration: "none", border: `1px solid ${t.accentPop}30`,
+                transition: "all 0.15s",
+              }}>
+                <Icon name="arrow" size={13} colour={t.accentPop} />
+                {label}
+              </a>
+            </div>
+          );
+        }
+
+        // Detect lines with inline URL pattern: "Label text: https://..."
+        const labeledUrl = trimmed.match(/^(.+?):\s*(https?:\/\/[^\s]+)$/);
+        if (labeledUrl) {
+          return (
+            <div key={i} style={{ marginBottom: 8 }}>
+              <a href={labeledUrl[2]} target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "#fff3ec", color: t.accentPop, borderRadius: 6,
+                padding: "7px 14px", fontSize: 13, fontWeight: 600,
+                textDecoration: "none", border: `1px solid ${t.accentPop}30`,
+                transition: "all 0.15s",
+              }}>
+                <Icon name="arrow" size={13} colour={t.accentPop} />
+                {labeledUrl[1]}
+              </a>
+            </div>
+          );
+        }
+
         const isHeader = trimmed.endsWith(":") && trimmed.length < 60 && !trimmed.startsWith("•") && !trimmed.startsWith("-");
         if (isHeader) {
           return (
@@ -1505,25 +1546,29 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
           max_tokens: 700,
           messages: [{
             role: "user",
-            content: `Create a short, practical interview cheat sheet for this candidate. Under 220 words.
+            content: `You are creating a pre-interview cheat sheet — not a session debrief. This is something the candidate reads 10 minutes before walking into the room. It should make them feel prepared, armed, and confident. Think boxer's corner card, not post-match analysis.
 
 IMPORTANT CONTEXT: The candidate answered ${genuineCount} out of ${totalCount} questions genuinely.
-${genuineCount <= 2 ? `They answered very few questions. Do NOT generate generic encouragement or false praise. Be honest — acknowledge what little they gave you, tell them plainly the cheat sheet is limited, and point them back to doing the full session. Do not say things like "you showed up" or "your answers show self-awareness" — these are not true based on the input.` : `Warm, direct, confidence-building tone based on what they actually said.`}
+${genuineCount <= 2 ? `They answered very few questions. Be honest — tell them the cheat sheet is limited because there wasn't enough to work with, and nudge them to come back and complete a full session before their interview. Keep it brief and direct.` : `Build this from what they actually said — pull real phrases and stories from their answers, not generic advice.`}
 
-Use exactly these 3 sections with these plain text headers followed by a colon. Do not use asterisks, dashes, or any markdown formatting in the headers themselves:
+Use exactly these 4 sections with plain text headers followed by a colon. No asterisks, dashes, or markdown formatting in headers:
 
-Your strongest moments:
-(2-3 bullet points — use the • character only, not dashes or asterisks. If answers were very limited, be honest about that rather than inventing strengths.)
+Your ammunition:
+(2-3 bullet points using • only — name their strongest specific stories or examples from this session. Write each as: "The [situation] story — use this when they ask about [topic]". Make it immediately usable, not descriptive.)
+
+Land these phrases:
+(2 bullet points using • only — pull the most compelling specific lines or phrases from their actual answers that they should use verbatim or close to it. Quote them directly if strong enough.)
 
 Watch out for:
-(2 bullet points max — use the • character only. If answers were very limited, include a point about needing to complete a full session.)
+(2 bullet points using • only — one specific thing to improve, one reminder about delivery or structure. Forward-facing, not critical.)
 
 Walk in with this:
-(one punchy sentence — if they did the full session, make it motivating. If they barely answered, make it a direct nudge to come back and do the work properly.)
+(One punchy, energising sentence. Make it feel personal to their background and this role. This is the last thing they read before they go in.)
 
-ARTICLE LINKS INSTRUCTION: At the end of the cheat sheet, after the three sections, add a short line break then write exactly this header:
+Then after the four sections add:
+
 Go deeper:
-Then include 1-3 relevant links from the list below — only include ones that are genuinely relevant to what the candidate struggled with or what their role needs. Use plain text with the URL in brackets. Do not include all of them — be selective.
+(1-3 clickable article links from aievolvingyou.com — only include ones genuinely relevant to what this candidate needs to work on. Format each as: Label text: URL on its own line.)
 
 Available articles:
 • The STAR Method — how to structure any behavioural answer: https://aievolvingyou.com/resources/star-method
@@ -1533,7 +1578,7 @@ Available articles:
 • How to use AI to prepare for interviews: https://aievolvingyou.com/resources/ai-interview-prep
 • How to interview after a long career gap: https://aievolvingyou.com/resources/interviewing-after-long-gap
 
-IMPORTANT: Use ONLY the • character for bullets. Do not use **, *, or - anywhere in your response. Write headers as plain text followed by a colon on its own line.
+RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers are plain text followed by a colon on their own line. Keep the whole thing under 250 words — tight and punchy, not comprehensive.
 
 Candidate background: ${userInfo.background}
 Why they want this role: ${userInfo.why}
