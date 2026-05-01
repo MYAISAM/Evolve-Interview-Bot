@@ -70,7 +70,7 @@
 ## Immediate — This Week
 
 ### Both sites
-- [ ] Favicons / logos — both coach.aievolvingyou.com and aievolvingyou.com need brand favicons
+- [x] Favicons added to both sites (April 2026)
 - [ ] Netlify Forms email notifications — configure on both sites so submissions land in inbox
 
 ### Interview Coach

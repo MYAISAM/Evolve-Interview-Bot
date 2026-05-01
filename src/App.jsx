@@ -1111,10 +1111,10 @@ const shuffled = roleFamily && careerStage
       questions_answered: 0,
       completed: false,
       paid: false,
-    });
-    if (session?.id) sessionIdRef.current = session.id;
-    // ─────────────────────────────────────────────────────────────
-
+  });
+  console.log("Supabase session result:", session);
+  if (session?.id) sessionIdRef.current = session.id;
+// ─────────────────────────────────────────────────────────────
     try {
       const validationRes = await fetch(API, {
         method: "POST",

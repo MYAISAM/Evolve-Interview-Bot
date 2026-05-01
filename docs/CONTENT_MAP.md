@@ -1,6 +1,6 @@
 # AI Evolving You — Content Map
 
-**Last updated:** 13 April 2026
+**Last updated:** 20 April 2026
 
 This document maps content types, site sections, and how content funnels visitors into products, waitlists, or paid resources.
 
@@ -29,49 +29,73 @@ It is **not** mainly a personal blog or founder portfolio.
 
 ---
 
-## 3. Resources section — three buckets
+## 3. Resources section — two audience tracks
 
-### Bucket A — Interview Resources
-
-**Audience:** Candidates, job seekers, career changers, interview prep users
-
-**Purpose:** Capture practical search traffic, provide useful prep content, funnel into the Interview Coach
-
-**Primary CTA:** Try the Interview Coach →
-
-**Priority articles:**
-1. The 4 types of interview question and how to answer each one
-2. The STAR method explained with real examples
-3. The weakness question: why "I'm a perfectionist" is the worst answer
-4. How to use AI to prep for interviews without sounding like a robot
-5. How to prepare for a behavioural interview
-6. Interview tips for career changers
+The Resources section is split into two clearly labelled tracks. Each track is a guided journey, not a list. Articles lead to the next article, and the final step in each track leads to a product.
 
 ---
 
-### Bucket B — AI & Hiring
+### Track 1 — For Candidates
 
-**Audience:** Candidates, hiring managers, recruiters, organisations, people trying to understand AI's impact on work
+**Audience:** Job seekers, career changers, interview prep users
 
-**Purpose:** Build authority, support SEO, connect broad AI/work concerns to specific products and frameworks
+**Purpose:** Capture practical search traffic, guide candidates through interview prep as a learning journey, funnel into the Interview Coach
 
-**Primary CTA:** Join the waitlist → / Explore frameworks → / Try the Interview Coach →
+**Journey labels:** Start here → Next up → Then try this → Going deeper → [CTA]
 
-**Priority articles:**
-1. How AI is changing what employers look for
-2. What hiring teams need to know about AI bias
-3. How AI is changing interviews, CV screening, and skills signals
-4. What candidates should know when AI is used in recruitment
-5. Why AI hiring processes need transparency
-6. How organisations can evaluate AI hiring tools more responsibly
+**End CTA:** Try the Interview Coach →
+
+**Article sequence:**
+
+| Step | Label | Article | URL |
+|------|-------|---------|-----|
+| 1 | Start here | The 4 types of interview question and how to answer each one | /resources/four-types-of-interview-question |
+| 2 | Next up | The STAR method explained with real examples | /resources/star-method |
+| 3 | Then try this | The weakness question: why "I'm a perfectionist" is the worst answer | /resources/weakness-question |
+| 4 | Going deeper | How to use AI to prep for interviews + the specificity principle | /resources/ai-interview-prep + /resources/specificity-principle |
+| — | Final step | Try the Interview Coach | coach.aievolvingyou.com |
+
+**Still to write (Bucket A remaining):**
+- How to prepare for a behavioural interview
+- Interview tips for career changers
+
+**Design notes:**
+- Each article links to the next article at the bottom ("Next up →")
+- Interview Coach CTA appears above the next-article link on the final step
+- Where possible, use tables and visuals instead of dense text (e.g. STAR comparison table, question type breakdown)
 
 ---
 
-### Bucket C — Organisational Frameworks
+### Track 2 — For Organisations
 
-**Audience:** HR teams, hiring managers, people teams, organisations making AI hiring decisions
+**Audience:** HR teams, hiring managers, people teams, organisations using or evaluating AI in hiring
 
-**Purpose:** Create a commercial path from authority content, introduce and sell paid framework documents
+**Purpose:** Build authority, establish trust with org buyers, funnel into paid framework products
+
+**Journey labels:** Start here → Next up → Then try this → Going deeper → [CTA]
+
+**End CTA:** Explore our frameworks → (AI Hiring Policy Framework, Bias Audit Checklist)
+
+**Article sequence:**
+
+| Step | Label | Article | Status |
+|------|-------|---------|--------|
+| 1 | Start here | How AI is changing what employers look for | To write |
+| 2 | Next up | What hiring teams need to know about AI bias | To write |
+| 3 | Then try this | What candidates should know when AI is used in recruitment | To write |
+| 4 | Going deeper | How organisations can evaluate AI hiring tools more responsibly | To write |
+| — | Final step | Explore paid frameworks | aievolvingyou.com/frameworks (to build) |
+
+**Overlapping articles note:**
+Some articles (e.g. "What candidates should know when AI is used in recruitment") serve both audiences. Where an article overlaps, it is published once but the CTA at the bottom is written for the primary audience. Cross-linking between tracks is added where relevant.
+
+---
+
+## 4. Paid framework products (Track 2 destination)
+
+**Audience:** HR teams, hiring managers, people teams making AI hiring decisions
+
+**Purpose:** Convert org readers into paying customers via practical, usable process documents
 
 **Primary CTA:** Buy framework → / Join waitlist → / Request info →
 
@@ -85,82 +109,69 @@ It is **not** mainly a personal blog or founder portfolio.
 
 ---
 
-## 4. Funnel logic
+## 5. Funnel logic
 
 ### Funnel 1 — Candidate / Interview prep
-Search intent: interview advice, STAR method, weakness question, behavioural interview help
+Search intent: interview advice, STAR method, weakness question, behavioural interview help, how to answer interview questions
 
 Journey:
-- Lands on Interview Resources article
-- Sees CTA to Interview Coach
-- Free trial → paid session
+- Lands on Candidate track article
+- Follows "Next up →" links through the sequence
+- Reaches Interview Coach CTA at the end
+- Free session → paid session
 
 ---
 
-### Funnel 2 — AI/Hiring concern
-Search intent: AI in hiring, AI bias in recruitment, AI changing job interviews, employers using AI screening
+### Funnel 2 — AI/Hiring concern (candidate)
+Search intent: AI in interviews, employers using AI screening, AI changing job applications
 
 Journey:
-- Lands on AI & Hiring article
-- Sees CTA to waitlist, framework, or Interview Coach depending on topic
-- Waitlist sign-up / framework sale / deeper brand engagement
+- Lands on overlapping article (Track 1 or 2)
+- Sees Interview Coach CTA
+- Free session → paid session
 
 ---
 
 ### Funnel 3 — Organisation / Buyer
-Search intent: AI hiring policy, AI recruitment framework, bias review checklist, AI procurement for HR
+Search intent: AI hiring policy, AI recruitment framework, bias audit hiring, AI procurement for HR
 
 Journey:
-- Lands on Organisational Frameworks page or AI & Hiring article
-- Sees framework offer
-- Paid framework purchase / lead capture
-
----
-
-## 5. Content destination rules
-
-### Publish on main site
-- Product-adjacent content
-- SEO-targeted resources
-- Interview help articles
-- AI/hiring articles
-- Org framework pages
-- Waitlist-driving pages
-
-### Publish on Substack
-- Broader Human Intelligence thinking
-- Reflective / essay-style work
-- Wider AI and society themes
-- Personal or exploratory ideas
-
-### Publish on YouTube
-- Commentary and breakdowns
-- Analysis and explainers
-- Content that can also support or link to site articles
+- Lands on Organisation track article
+- Follows "Next up →" links through the sequence
+- Reaches framework product CTA at the end
+- Framework purchase / lead capture
 
 ---
 
 ## 6. Content priorities by phase
 
-### Phase 1 — Post beta (week of 16 April)
-Interview Resources first — these support the live product directly:
-1. The 4 types of interview question and how to answer each one
-2. The STAR method explained with real examples
-3. The weakness question: why "I'm a perfectionist" is the worst answer
-4. How to use AI to prep for interviews without sounding like a robot
+### Phase 1 — Post beta (week of 16 April) ✓
+Candidate track articles — support the live product directly:
+- [x] The 4 types of interview question and how to answer each one
+- [x] The STAR method explained with real examples
+- [x] The weakness question: why "I'm a perfectionist" is the worst answer
+- [x] How to use AI to prep for interviews without sounding like a robot
+- [x] The specificity principle
+- [x] Interviewing after a long gap
 
-### Phase 2 — Week of 30 April
-AI & Hiring next — authority building for broader funnel:
-1. How AI is changing what employers look for
-2. What hiring teams need to know about AI bias
-3. How AI is changing interviews, CV screening, and skills signals
+### Phase 2 — Week of 21 April (now)
+Organisation track articles — authority building, org funnel:
+- [ ] How AI is changing what employers look for
+- [ ] What hiring teams need to know about AI bias
+- [ ] What candidates should know when AI is used in recruitment
+- [ ] How organisations can evaluate AI hiring tools more responsibly
 
-### Phase 3 — May onwards
-Organisational Frameworks — commercial pages/products:
-1. AI Hiring Policy Framework
-2. Bias Audit Checklist
-3. Candidate Transparency Standards
-4. AI Purchasing Guide for Hiring Teams
+Candidate track remaining:
+- [ ] How to prepare for a behavioural interview
+- [ ] Interview tips for career changers
+
+### Phase 3 — Week of 28 April
+Organisational framework product pages:
+- [ ] AI Hiring Policy Framework sales page — £79
+- [ ] Bias Audit Checklist sales page — £49
+- [ ] Candidate Transparency Guide sales page — £49
+- [ ] AI Procurement Questions sales page — £79
+- [ ] /frameworks landing page linking all four
 
 ---
 
@@ -168,23 +179,41 @@ Organisational Frameworks — commercial pages/products:
 
 | Content type | Primary CTA |
 |---|---|
-| Interview article | Try the Interview Coach → |
-| AI & Hiring article | Join the waitlist → or Explore frameworks → |
-| Org framework page | Buy now → or Join waitlist → |
+| Candidate track article (mid-journey) | Next up: [article title] → |
+| Candidate track article (final step) | Try the Interview Coach → |
+| Organisation track article (mid-journey) | Next up: [article title] → |
+| Organisation track article (final step) | Explore our frameworks → |
 | Homepage | Try the Interview Coach → |
+| Framework product page | Buy now → |
 
 ---
 
-## 8. Every article must answer three questions
+## 8. Article content standards
 
-Before publishing any article or page:
+Every article must answer three questions before publishing:
 1. Who is this for?
 2. What problem does it solve?
 3. Where does it send the reader next?
 
+Every article should include at least one visual element where relevant:
+- Comparison tables (e.g. good vs bad STAR answers)
+- Question type breakdowns
+- Step-by-step frameworks as tables
+- Before/after examples
+
 ---
 
-## 9. Guardrails
+## 9. Nav — locked structure
+
+**Desktop nav:** Products (dropdown) · Resources · Human Intelligence (dropdown) · Connect
+
+**Products dropdown:** Interview Coach (Beta) · AI Displacement Risk Report (waitlist)
+
+**Human Intelligence dropdown:** YouTube · Substack
+
+---
+
+## 10. Guardrails
 
 Do not publish content that:
 - Is too broad to support any specific product
@@ -195,7 +224,7 @@ Do not publish content that:
 
 ---
 
-## 10. Future content expansion (post Phase 3)
+## 11. Future content expansion (post Phase 3)
 
 - Career transition / role change resources
 - Candidate rights and transparency in AI hiring
@@ -203,4 +232,4 @@ Do not publish content that:
 - Resources for returners / early careers / career changers
 - AI readiness assessments for organisations
 
-Only expand once the first three buckets are working clearly.
+Only expand once the two tracks are complete and working.
