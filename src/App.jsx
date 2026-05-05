@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const API = "/api/anthropic";
+const API = "/api/anthropic"; // v2
 
 // ── Supabase client ───────────────────────────────────────────────
 const supabase = createClient(
