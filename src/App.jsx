@@ -1822,18 +1822,31 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
                   <p style={{ fontSize: 12, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Your answer</p>
                   <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, fontStyle: "italic" }}>{item.a}</p>
                 </div>
-                {item.feedback && (
-                  <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: "#fffdf7" }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: t.accentPop, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Key coaching point</p>
-                    <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6 }}>
-                      {item.feedback.split("\n").find(l => l.toLowerCase().includes("sharpen") || l.toLowerCase().includes("improve"))
-                        ? item.feedback.split("\n").slice(
-                            item.feedback.split("\n").findIndex(l => l.toLowerCase().includes("sharpen")) + 1
-                          ).find(l => l.trim().length > 20) || item.feedback.split("\n").find(l => l.trim().length > 20)
-                        : item.feedback.split("\n").find(l => l.trim().length > 20)}
-                    </p>
-                  </div>
-                )}
+                {item.feedback && (() => {
+                  const lines = item.feedback.split("\n");
+                  const sharpenIdx = lines.findIndex(l => l.toLowerCase().includes("sharpen"));
+                  const coachingLine = sharpenIdx >= 0
+                    ? lines.slice(sharpenIdx + 1).find(l => l.trim().length > 20) || lines.find(l => l.trim().length > 20)
+                    : lines.find(l => l.trim().length > 20);
+                  const tryIdx = lines.findIndex(l => l.toLowerCase().includes("try saying"));
+                  const tryLine = tryIdx >= 0
+                    ? lines.slice(tryIdx + 1).filter(l => l.trim().length > 20).join(" ")
+                    : null;
+                  return (
+                    <>
+                      <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: "#fffdf7" }}>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: t.accentPop, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Key coaching point</p>
+                        <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6 }}>{coachingLine}</p>
+                      </div>
+                       {tryLine && (
+                         <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: "#f0f9f6" }}>
+                           <p style={{ fontSize: 12, fontWeight: 700, color: t.accentGreen, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Try saying it like this</p>
+                           <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6, fontStyle: "italic" }}>{tryLine}</p>
+                         </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -1862,11 +1875,23 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
               <div key={i} className="qa-block">
                 <p className="qa-q">Q{i + 1}: {item.q}</p>
                 <p className="qa-a">Your answer: {item.a}</p>
-                {item.feedback && (
-                  <p className="qa-coaching">
-                    Coaching: {item.feedback.split("\n").find(l => l.trim().length > 20)}
-                  </p>
-                )}
+                {item.feedback && (() => {
+                  const lines = item.feedback.split("\n");
+                  const sharpenIdx = lines.findIndex(l => l.toLowerCase().includes("sharpen"));
+                  const coachingLine = sharpenIdx >= 0
+                    ? lines.slice(sharpenIdx + 1).find(l => l.trim().length > 20) || lines.find(l => l.trim().length > 20)
+                    : lines.find(l => l.trim().length > 20);
+                  const tryIdx = lines.findIndex(l => l.toLowerCase().includes("try saying"));
+                  const tryLine = tryIdx >= 0
+                    ? lines.slice(tryIdx + 1).filter(l => l.trim().length > 20).join(" ")
+                    : null;
+                  return (
+                    <>
+                      {coachingLine && <p className="qa-coaching">Coaching: {coachingLine}</p>}
+                      {tryLine && <p className="qa-coaching" style={{ marginTop: 4 }}>Try saying it like this: {tryLine}</p>}
+                    </>
+                );
+              })()}
               </div>
            ))}
         </>
