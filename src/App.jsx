@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const API = "/api/anthropic"; // v2
+const ENABLE_SESSION_TRACKING = false; // Phase 1: parked until auth/payment flow is ready
 
 // ── Supabase client ───────────────────────────────────────────────
 const supabase = createClient(
@@ -10,6 +11,7 @@ const supabase = createClient(
 );
 
 async function supabaseInsert(table, data) {
+    if (!ENABLE_SESSION_TRACKING) return null;
   try {
     const { data: result, error } = await supabase.from(table).insert(data).select();
     if (error) { console.error("Supabase insert error:", error); return null; }
@@ -83,6 +85,112 @@ const css = `
     pointer-events: none;
     will-change: background-position;
   }
+  @media print {
+    header,
+    .no-print,
+    main > div > *:not(#pdf-content) {
+      display: none !important;
+    }
+
+    html,
+    body {
+      background: white !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    main,
+    main > div {
+      display: block !important;
+      max-width: none !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    #pdf-content {
+      display: block !important;
+      position: static !important;
+      width: auto !important;
+      max-width: none !important;
+      height: auto !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      font-family: 'Inter', sans-serif;
+      color: #111111;
+      background: white;
+  }
+
+#pdf-content > * {
+  overflow: visible !important;
+}
+
+    .cheat-sheet-print h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #3F6F63;
+      margin-bottom: 4px;
+    }
+
+    .cheat-sheet-print h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #D47A2C;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 20px 0 6px;
+    }
+
+    .cheat-sheet-print p,
+    .cheat-sheet-print li {
+      font-size: 13px;
+      line-height: 1.7;
+      color: #111111;
+    }
+
+    .cheat-sheet-print .qa-block {
+      border-left: 3px solid #3F6F63;
+      padding-left: 12px;
+      margin-bottom: 16px;
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+
+    .cheat-sheet-print .qa-q {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .cheat-sheet-print .qa-a {
+      font-size: 12px;
+      color: #555555;
+      font-style: italic;
+    }
+
+    .cheat-sheet-print .qa-coaching {
+      font-size: 12px;
+      color: #D47A2C;
+      margin-top: 4px;
+    }
+
+    .cheat-sheet-print .divider {
+      border: none;
+      border-top: 1px solid #eeeeee;
+      margin: 20px 0;
+    }
+
+    @page {
+      margin: 20mm;
+    }
+  }
+
+  .print-only {
+    display: none;
+  }
+
 `;
 
 // ── SVG Icon System ───────────────────────────────────────────────
@@ -802,7 +910,15 @@ function Landing({ onStart }) {
             ))}
           </div>
           <Btn onClick={onStart} style={{ padding: "15px 40px", fontSize: 16 }}>Start your session →</Btn>
-          <p style={{ color: t.inkLight, fontSize: 12, marginTop: 14, fontStyle: "italic" }}>No signup · No payment · Beta access</p>
+          <p style={{ color: t.inkLight, fontSize: 12, marginTop: 14, fontStyle: "italic" }}>
+          No signup · No payment · Beta access
+          </p>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "#fff8f0", border: `1px solid ${t.accentPop}30`, borderRadius: 8, padding: "10px 14px", maxWidth: 400, margin: "16px auto 0", textAlign: "left" }}>
+            <Icon name="warning" size={14} colour={t.accentPop} />
+            <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5, margin: 0 }}>
+               Your session and cheat sheet are not saved. Download your cheat sheet at the end before you close the tab.
+            </p>
+          </div>
         </div>
       </div>
       <Divider />
@@ -1049,6 +1165,16 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   const recognitionRef = useRef(null);
   const sessionIdRef = useRef(null);
   useScrollToTop("coaching");
+
+  useEffect(() => {
+  const handler = (e) => {
+    e.preventDefault();
+    e.returnValue = "";
+  };
+
+  window.addEventListener("beforeunload", handler);
+  return () => window.removeEventListener("beforeunload", handler);
+  }, []); 
 
   // Use careerStage bank if selected, otherwise roleFamily bank
   const bank = QUESTION_BANK[category] || QUESTION_BANK[roleFamily];
@@ -1509,6 +1635,22 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
   const totalCount = answers.length;
   const halfOrMore = genuineCount >= Math.ceil(totalCount / 2);
 
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  useEffect(() => {
+    if (genuineCount > 0) {
+      generateSummary();
+    }
+  }, []);
+
   if (genuineCount === 0) {
     return (
       <div className="fade-in" style={{ maxWidth: 520, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
@@ -1626,7 +1768,41 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
         )}
       </div>
 
-      {/* ── Q&A Recap ─────────────────────────────────────────── */}
+      <div className="no-print" style={{ background: "#f0f9f0", border: `1.5px solid ${t.accentGreen}`, borderRadius: 10, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <Icon name="warning" size={16} colour={t.accentGreen} />
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: t.ink, marginBottom: 2 }}>
+              Save your cheat sheet before you go
+            </p>
+            <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>
+              This session is not saved. Once you close this tab, your cheat sheet and coaching notes are gone.
+            </p>
+         </div>
+       </div>
+
+       <button
+         onClick={() => window.print()}
+         disabled={loadingSheet}
+         style={{
+           background: loadingSheet ? t.inkLight : t.accentGreen,
+           color: "#fff",
+           border: "none",
+           borderRadius: 6,
+           padding: "10px 20px",
+           fontSize: 14,
+           fontWeight: 600,
+           cursor: loadingSheet ? "not-allowed" : "pointer",
+           fontFamily: "'Inter', sans-serif",
+           whiteSpace: "nowrap",
+           opacity: loadingSheet ? 0.6 : 1,
+     }}
+>
+    Save PDF
+  </button>
+</div>
+
+{/* ── Q&A Recap ─────────────────────────────────────────── */}
       {answers.filter(a => a.genuine).length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ marginBottom: 12 }}>
@@ -1664,7 +1840,45 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
         </div>
       )}
       {/* ────────────────────────────────────────────────────────── */}
+      
+      {/* ── Print-only PDF content ─────────────────────────────── */}
+      <div id="pdf-content" className="cheat-sheet-print print-only">
+        <h1>AI Evolving You — Interview Cheat Sheet</h1>
 
+        <p style={{ fontSize: 12, color: "#555555", marginBottom: 16 }}>
+          Role: {cat?.label} · Generated {new Date().toLocaleDateString("en-GB")}
+        </p>
+
+        <hr className="divider" />
+
+        <RenderMarkdown text={cheatSheet} />
+
+        {answers.filter(a => a.genuine).length > 0 && (
+          <>
+            <hr className="divider" />
+            <h2>Session Recap</h2>
+
+            {answers.filter(a => a.genuine).map((item, i) => (
+              <div key={i} className="qa-block">
+                <p className="qa-q">Q{i + 1}: {item.q}</p>
+                <p className="qa-a">Your answer: {item.a}</p>
+                {item.feedback && (
+                  <p className="qa-coaching">
+                    Coaching: {item.feedback.split("\n").find(l => l.trim().length > 20)}
+                  </p>
+                )}
+              </div>
+           ))}
+        </>
+      )}
+
+      <hr className="divider" />
+
+      <p style={{ fontSize: 11, color: "#999999" }}>
+        coach.aievolvingyou.com
+      </p>
+    </div>
+{/* ────────────────────────────────────────────────────────── */}
       <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
         <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
           <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this tool. Session history, progress tracking, and voice mode are all coming — see the full roadmap on the <a href="/" style={{ color: t.accentPop }}>homepage</a>.
@@ -1805,9 +2019,9 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
             Send feedback →
           </Btn>
           <p style={{ fontSize: 11, color: t.inkLight, marginTop: 12, fontStyle: "italic", lineHeight: 1.5 }}>
-            Your answers are used only to generate your coaching and cheat sheet. Nothing is stored or shared. Session ends when you close the tab.
+            Your written answers are used only to generate your coaching and cheat sheet and are not saved in this beta. Lightweight anonymous session tracking is currently disabled while we prepare the account-based version.
           </p>
-        </div>
+          </div>
       ) : (
         <div className="fade-in" style={{ textAlign: "center", padding: "40px 0" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
