@@ -1,34 +1,33 @@
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
 
-const API = "/api/anthropic"; // v2
-const ENABLE_SESSION_TRACKING = false; // Phase 1: parked until auth/payment flow is ready
+const API = "/api/anthropic";
+const AUTH_API = "/api/auth";
+let currentUser = null;
+let currentAccessToken = null;
 
-// ── Supabase client ───────────────────────────────────────────────
-const supabase = createClient(
-  "https://fdwldyhzoojeoapmqwxv.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkd2xkeWh6b29qZW9hcG1xd3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3ODcwMjAsImV4cCI6MjA1OTM2MzAyMH0.PRL7W4jzMS9l-B4xJI4NYRp12sVR0ylfc2xWN_E2qL4"
-);
-
-async function supabaseInsert(table, data) {
-    if (!ENABLE_SESSION_TRACKING) return null;
+// ── Supabase helpers (routed via Netlify function) ────────────────
+async function supabaseInsert(sessionData) {
+  if (!currentAccessToken) return null;
   try {
-    const { data: result, error } = await supabase.from(table).insert(data).select();
-    if (error) { console.error("Supabase insert error:", error); return null; }
-    return result[0] || null;
-  } catch (e) {
-    console.error("Supabase insert error:", e);
-    return null;
-  }
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "insertSession", sessionData: { ...sessionData, user_id: currentUser?.id }, accessToken: currentAccessToken }),
+    });
+    const data = await res.json();
+    return data.success ? data.session : null;
+  } catch (e) { console.error("Session insert error:", e); return null; }
 }
 
-async function supabaseUpdate(table, id, data) {
+async function supabaseUpdate(sessionId, updates) {
+  if (!currentAccessToken || !sessionId) return;
   try {
-    const { error } = await supabase.from(table).update(data).eq("id", id);
-    if (error) console.error("Supabase update error:", error);
-  } catch (e) {
-    console.error("Supabase update error:", e);
-  }
+    await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "updateSession", sessionId, updates, accessToken: currentAccessToken }),
+    });
+  } catch (e) { console.error("Session update error:", e); }
 }
 
 function generateToken() {
@@ -222,15 +221,10 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
 }
 
 // ── Question Bank ─────────────────────────────────────────────────
-// 14 categories — 8 Role Families + 5 Career Stages + 1 Specialist
-// 25 questions per category = 350 questions total
-
 const ROLE_FAMILIES = ["commercial", "people_talent", "product_tech", "marketing", "finance_ops", "hr_people", "project_programme", "general"];
 const CAREER_STAGES = ["graduate", "experienced", "career_changer", "returner", "mindset", "tough_questions"];
 
 const QUESTION_BANK = {
-
-  // ── ROLE FAMILIES ────────────────────────────────────────────────
 
   commercial: {
     label: "Commercial & Revenue",
@@ -512,8 +506,6 @@ const QUESTION_BANK = {
     ],
   },
 
-  // ── CAREER STAGES ────────────────────────────────────────────────
-
   graduate: {
     label: "Graduate & Early Careers",
     sublabel: "First job, internships, placements, apprenticeships",
@@ -689,8 +681,6 @@ const QUESTION_BANK = {
     ],
   },
 
-  // ── SPECIALIST ───────────────────────────────────────────────────
-
   tough_questions: {
     label: "Tough & Bias-Adjacent Questions",
     sublabel: "Non-traditional backgrounds, gaps, no degree, social mobility",
@@ -747,7 +737,6 @@ function RenderMarkdown({ text, style = {} }) {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{ height: 8 }} />;
 
-        // Detect lines that are purely a URL — render as a button link
         const urlOnly = trimmed.match(/^(https?:\/\/[^\s]+)$/);
         if (urlOnly) {
           const url = urlOnly[1];
@@ -768,7 +757,6 @@ function RenderMarkdown({ text, style = {} }) {
           );
         }
 
-        // Detect lines with inline URL pattern: "Label text: https://..."
         const labeledUrl = trimmed.match(/^(.+?):\s*(https?:\/\/[^\s]+)$/);
         if (labeledUrl) {
           return (
@@ -869,6 +857,75 @@ function useScrollToTop(dep) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [dep]);
+}
+
+// ── Auth Step ─────────────────────────────────────────────────────
+function AuthStep({ onAuth, onSkip }) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function sendMagicLink() {
+    if (!email || !email.includes("@")) { setError("Please enter a valid email address"); return; }
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch(AUTH_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "sendMagicLink", email }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to send link");
+      setSent(true);
+    } catch (err) { setError(err.message); }
+    setLoading(false);
+  }
+
+  if (sent) {
+    return (
+      <div className="fade-up" style={{ maxWidth: 480, margin: "0 auto", padding: "60px 24px", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+          <Icon name="check" size={40} colour={t.accentGreen} />
+        </div>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Check your email</h2>
+        <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
+          We've sent a magic link to <strong>{email}</strong>. Click it to save your session automatically — no password needed.
+        </p>
+        <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, padding: "12px 16px", marginBottom: 24 }}>
+          <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Link not arrived? Check your spam folder or wait 30 seconds and try again.</p>
+        </div>
+        <button onClick={onSkip} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 13, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>
+          Continue without saving my session
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fade-up" style={{ maxWidth: 480, margin: "0 auto", padding: "60px 24px" }}>
+      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Save your session</Tag></div>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, margin: "12px 0 8px" }}>Get a link to save your cheat sheet</h2>
+      <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, marginBottom: 28, fontWeight: 300 }}>
+        Enter your email and we'll send you a magic link. No password. Your session and cheat sheet will be saved so you can come back to them.
+      </p>
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="email" value={email}
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && sendMagicLink()}
+          placeholder="your@email.com"
+          style={{ width: "100%", background: t.surface, border: `1.5px solid ${email.includes("@") ? t.accentGreen : t.border}`, borderRadius: 8, padding: "13px 15px", color: t.ink, fontSize: 15, outline: "none", transition: "border-color 0.2s", fontFamily: "'Inter', sans-serif" }}
+        />
+        {error && <p style={{ fontSize: 12, color: t.accentPop, marginTop: 6, fontStyle: "italic" }}>{error}</p>}
+      </div>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <Btn onClick={sendMagicLink} disabled={loading}>{loading ? "Sending…" : "Send my magic link →"}</Btn>
+        <button onClick={onSkip} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 13, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>Skip for now</button>
+      </div>
+      <p style={{ fontSize: 11, color: t.inkLight, marginTop: 16, lineHeight: 1.5, fontStyle: "italic" }}>No spam. We only email you this link and product updates if you opt in.</p>
+    </div>
+  );
 }
 
 // ── Landing ───────────────────────────────────────────────────────
@@ -972,14 +1029,12 @@ function Landing({ onStart }) {
 }
 
 // ── Category Picker ───────────────────────────────────────────────
-// Three-box UX: Role Family (required) → Career Stage (optional) → Job spec (required)
 function CategoryStep({ onNext }) {
   const [roleFamily, setRoleFamily] = useState(null);
   const [careerStage, setCareerStage] = useState(null);
   const [jd, setJd] = useState("");
   useScrollToTop("category");
 
-  // Derive the active category key: career stage takes priority if selected, else role family
   const activeCategory = careerStage || roleFamily;
 
   const roleFamilies = ROLE_FAMILIES.map(key => ({ key, ...QUESTION_BANK[key] }));
@@ -991,7 +1046,6 @@ function CategoryStep({ onNext }) {
       <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>Set up your session</h2>
       <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 32, fontWeight: 300 }}>Three quick steps — takes less than a minute.</p>
 
-      {/* BOX 1 — Role Family */}
       <div style={{ background: t.surface, border: `1.5px solid ${roleFamily ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <div style={{ width: 24, height: 24, borderRadius: "50%", background: roleFamily ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1021,7 +1075,6 @@ function CategoryStep({ onNext }) {
         </div>
       </div>
 
-      {/* BOX 2 — Career Stage */}
       <div style={{ background: t.surface, border: `1.5px solid ${careerStage ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <div style={{ width: 24, height: 24, borderRadius: "50%", background: careerStage ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1051,7 +1104,6 @@ function CategoryStep({ onNext }) {
         </div>
       </div>
 
-      {/* BOX 3 — Job spec */}
       <div style={{ background: t.surface, border: `1.5px solid ${jd.length > 50 ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <div style={{ width: 24, height: 24, borderRadius: "50%", background: jd.length > 50 ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1167,16 +1219,14 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   useScrollToTop("coaching");
 
   useEffect(() => {
-  const handler = (e) => {
-    e.preventDefault();
-    e.returnValue = "";
-  };
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
-  window.addEventListener("beforeunload", handler);
-  return () => window.removeEventListener("beforeunload", handler);
-  }, []); 
-
-  // Use careerStage bank if selected, otherwise roleFamily bank
   const bank = QUESTION_BANK[category] || QUESTION_BANK[roleFamily];
 
   useEffect(() => {
@@ -1217,30 +1267,28 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [currentQ]);
 
   async function buildQuestions() {
-const shuffled = roleFamily && careerStage
-  ? [
-      ...[...QUESTION_BANK[roleFamily].questions].sort(() => Math.random() - 0.5).slice(0, 2),
-      ...[...QUESTION_BANK[careerStage].questions].sort(() => Math.random() - 0.5).slice(0, 1),
-    ]
-  : [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
-    // Build context label for AI — combine role family + career stage if both selected
+    const shuffled = roleFamily && careerStage
+      ? [
+          ...[...QUESTION_BANK[roleFamily].questions].sort(() => Math.random() - 0.5).slice(0, 2),
+          ...[...QUESTION_BANK[careerStage].questions].sort(() => Math.random() - 0.5).slice(0, 1),
+        ]
+      : [...bank.questions].sort(() => Math.random() - 0.5).slice(0, 3);
+
     const contextLabel = roleFamily && careerStage
       ? `${QUESTION_BANK[roleFamily].label} (${QUESTION_BANK[careerStage].label})`
       : bank.label;
 
-    // ── Create Supabase session row ───────────────────────────────
     const token = generateToken();
-    const session = await supabaseInsert("coach_sessions", {
+    const session = await supabaseInsert({
       session_token: token,
       role_family: roleFamily ? QUESTION_BANK[roleFamily].label : null,
       career_stage: careerStage ? QUESTION_BANK[careerStage].label : null,
       questions_answered: 0,
       completed: false,
       paid: false,
-  });
-  console.log("Supabase session result:", session);
-  if (session?.id) sessionIdRef.current = session.id;
-// ─────────────────────────────────────────────────────────────
+    });
+    if (session?.id) sessionIdRef.current = session.id;
+
     try {
       const validationRes = await fetch(API, {
         method: "POST",
@@ -1408,14 +1456,12 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 
     const isLastQuestion = currentQ + 1 >= questions.length;
 
-    // ── Update Supabase session ───────────────────────────────────
     if (sessionIdRef.current) {
-      supabaseUpdate("coach_sessions", sessionIdRef.current, {
+      supabaseUpdate(sessionIdRef.current, {
         questions_answered: newAnswers.filter(a => a.genuine).length,
         completed: isLastQuestion,
       });
     }
-    // ─────────────────────────────────────────────────────────────
 
     if (isLastQuestion) { onFinish(newAnswers); }
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
@@ -1640,7 +1686,6 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
       e.preventDefault();
       e.returnValue = "";
     };
-
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
@@ -1667,8 +1712,6 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
       </div>
     );
   }
-
-  useEffect(() => { generateSummary(); }, []);
 
   async function generateSummary() {
     try {
@@ -1778,31 +1821,24 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
             <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>
               This session is not saved. Once you close this tab, your cheat sheet and coaching notes are gone.
             </p>
-         </div>
-       </div>
+          </div>
+        </div>
+        <button
+          onClick={() => window.print()}
+          disabled={loadingSheet}
+          style={{
+            background: loadingSheet ? t.inkLight : t.accentGreen,
+            color: "#fff", border: "none", borderRadius: 6,
+            padding: "10px 20px", fontSize: 14, fontWeight: 600,
+            cursor: loadingSheet ? "not-allowed" : "pointer",
+            fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap",
+            opacity: loadingSheet ? 0.6 : 1,
+          }}
+        >
+          Save PDF
+        </button>
+      </div>
 
-       <button
-         onClick={() => window.print()}
-         disabled={loadingSheet}
-         style={{
-           background: loadingSheet ? t.inkLight : t.accentGreen,
-           color: "#fff",
-           border: "none",
-           borderRadius: 6,
-           padding: "10px 20px",
-           fontSize: 14,
-           fontWeight: 600,
-           cursor: loadingSheet ? "not-allowed" : "pointer",
-           fontFamily: "'Inter', sans-serif",
-           whiteSpace: "nowrap",
-           opacity: loadingSheet ? 0.6 : 1,
-     }}
->
-    Save PDF
-  </button>
-</div>
-
-{/* ── Q&A Recap ─────────────────────────────────────────── */}
       {answers.filter(a => a.genuine).length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ marginBottom: 12 }}>
@@ -1838,11 +1874,11 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
                         <p style={{ fontSize: 12, fontWeight: 700, color: t.accentPop, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Key coaching point</p>
                         <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6 }}>{coachingLine}</p>
                       </div>
-                       {tryLine && (
-                         <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: "#f0f9f6" }}>
-                           <p style={{ fontSize: 12, fontWeight: 700, color: t.accentGreen, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Try saying it like this</p>
-                           <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6, fontStyle: "italic" }}>{tryLine}</p>
-                         </div>
+                      {tryLine && (
+                        <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: "#f0f9f6" }}>
+                          <p style={{ fontSize: 12, fontWeight: 700, color: t.accentGreen, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Try saying it like this</p>
+                          <p style={{ fontSize: 13, color: t.ink, lineHeight: 1.6, fontStyle: "italic" }}>{tryLine}</p>
+                        </div>
                       )}
                     </>
                   );
@@ -1852,25 +1888,18 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
           </div>
         </div>
       )}
-      {/* ────────────────────────────────────────────────────────── */}
-      
-      {/* ── Print-only PDF content ─────────────────────────────── */}
+
       <div id="pdf-content" className="cheat-sheet-print print-only">
         <h1>AI Evolving You — Interview Cheat Sheet</h1>
-
         <p style={{ fontSize: 12, color: "#555555", marginBottom: 16 }}>
           Role: {cat?.label} · Generated {new Date().toLocaleDateString("en-GB")}
         </p>
-
         <hr className="divider" />
-
         <RenderMarkdown text={cheatSheet} />
-
         {answers.filter(a => a.genuine).length > 0 && (
           <>
             <hr className="divider" />
             <h2>Session Recap</h2>
-
             {answers.filter(a => a.genuine).map((item, i) => (
               <div key={i} className="qa-block">
                 <p className="qa-q">Q{i + 1}: {item.q}</p>
@@ -1890,20 +1919,16 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
                       {coachingLine && <p className="qa-coaching">Coaching: {coachingLine}</p>}
                       {tryLine && <p className="qa-coaching" style={{ marginTop: 4 }}>Try saying it like this: {tryLine}</p>}
                     </>
-                );
-              })()}
+                  );
+                })()}
               </div>
-           ))}
-        </>
-      )}
+            ))}
+          </>
+        )}
+        <hr className="divider" />
+        <p style={{ fontSize: 11, color: "#999999" }}>coach.aievolvingyou.com</p>
+      </div>
 
-      <hr className="divider" />
-
-      <p style={{ fontSize: 11, color: "#999999" }}>
-        coach.aievolvingyou.com
-      </p>
-    </div>
-{/* ────────────────────────────────────────────────────────── */}
       <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
         <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
           <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this tool. Session history, progress tracking, and voice mode are all coming — see the full roadmap on the <a href="/" style={{ color: t.accentPop }}>homepage</a>.
@@ -2046,7 +2071,7 @@ Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.
           <p style={{ fontSize: 11, color: t.inkLight, marginTop: 12, fontStyle: "italic", lineHeight: 1.5 }}>
             Your written answers are used only to generate your coaching and cheat sheet and are not saved in this beta. Lightweight anonymous session tracking is currently disabled while we prepare the account-based version.
           </p>
-          </div>
+        </div>
       ) : (
         <div className="fade-in" style={{ textAlign: "center", padding: "40px 0" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
@@ -2071,10 +2096,13 @@ export default function App() {
   const [jd, setJd] = useState("");
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
+  const [authed, setAuthed] = useState(false);
 
   function reset() {
     setStep(0); setCategory(null); setRoleFamily(null);
-    setCareerStage(null); setJd(""); setUserInfo(null); setSessionAnswers([]);
+    setCareerStage(null); setJd(""); setUserInfo(null);
+    setSessionAnswers([]); setAuthed(false);
+    currentUser = null; currentAccessToken = null;
   }
 
   return (
@@ -2097,23 +2125,29 @@ export default function App() {
         <main style={{ maxWidth: 720, margin: "0 auto", paddingTop: 40 }}>
           {step === 0 && <Landing onStart={() => setStep(1)} />}
           {step === 1 && (
+            <AuthStep
+              onAuth={(user, token) => { currentUser = user; currentAccessToken = token; setAuthed(true); setStep(2); }}
+              onSkip={() => setStep(2)}
+            />
+          )}
+          {step === 2 && (
             <CategoryStep onNext={({ category: c, roleFamily: rf, careerStage: cs, jd: j }) => {
-              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setJd(j); setStep(2);
+              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setJd(j); setStep(3);
             }} />
           )}
-          {step === 2 && <AboutStep onNext={info => { setUserInfo(info); setStep(3); }} />}
-          {step === 3 && (
+          {step === 3 && <AboutStep onNext={info => { setUserInfo(info); setStep(4); }} />}
+          {step === 4 && (
             <CoachingStep
               category={category}
               roleFamily={roleFamily}
               careerStage={careerStage}
               jd={jd}
               userInfo={userInfo}
-              onFinish={ans => { setSessionAnswers(ans); setStep(4); }}
-              onBackToAbout={() => setStep(2)}
+              onFinish={ans => { setSessionAnswers(ans); setStep(5); }}
+              onBackToAbout={() => setStep(3)}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <SummaryStep
               answers={sessionAnswers}
               userInfo={userInfo}
