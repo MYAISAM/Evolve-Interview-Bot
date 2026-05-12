@@ -39,32 +39,26 @@ exports.handler = async (event) => {
 
     // ── Verify OTP token (from magic link) ───────────────────────
     if (action === "verifyToken") {
-      const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: token,
-        type: "email",
-      });
+      const { data, error } = await supabase.auth.getUser(token);
       if (error) throw error;
-
       if (data?.user) {
         await supabase.from("profiles").upsert({
           user_id: data.user.id,
           email: data.user.email,
           app: "coach",
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }, { onConflict: "user_id" });
-      }
-
-      return {
-        statusCode: 200,
-        headers: { ...CORS, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          success: true,
-          user: data?.user || null,
-          session: data?.session || null,
-        }),
-      };
     }
+    return {
+      statusCode: 200,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      success: true,
+      user: data?.user || null,
+    }),
+    };
+   }
+
 
     // ── Insert coach session ──────────────────────────────────────
     if (action === "insertSession") {
