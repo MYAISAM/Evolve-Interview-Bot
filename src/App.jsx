@@ -2097,6 +2097,32 @@ export default function App() {
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
   const [authed, setAuthed] = useState(false);
+  
+useEffect(() => {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.replace("#", "?"));
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (!accessToken) return;
+
+  fetch(AUTH_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "verifyToken", token: accessToken }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.user) {
+        currentUser = data.user;
+        currentAccessToken = accessToken;
+        setAuthed(true);
+        window.history.replaceState(null, "", window.location.pathname);
+        setStep(2);
+      }
+    })
+    .catch(e => console.error("Token catch error:", e));
+}, []);
 
   function reset() {
     setStep(0); setCategory(null); setRoleFamily(null);
