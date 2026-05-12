@@ -2097,7 +2097,7 @@ export default function App() {
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
   const [authed, setAuthed] = useState(false);
-  
+
 useEffect(() => {
   const hash = window.location.hash;
   if (!hash) return;
@@ -2122,7 +2122,7 @@ useEffect(() => {
       }
     })
     .catch(e => console.error("Token catch error:", e));
-}, []);
+}, [setStep]);
 
   function reset() {
     setStep(0); setCategory(null); setRoleFamily(null);
