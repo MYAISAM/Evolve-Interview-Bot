@@ -967,9 +967,7 @@ function Landing({ onStart }) {
             ))}
           </div>
           <Btn onClick={onStart} style={{ padding: "15px 40px", fontSize: 16 }}>Start your session →</Btn>
-          <p style={{ color: t.inkLight, fontSize: 12, marginTop: 14, fontStyle: "italic" }}>
-          No signup · No payment · Beta access
-          </p>
+
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "#fff8f0", border: `1px solid ${t.accentPop}30`, borderRadius: 8, padding: "10px 14px", maxWidth: 400, margin: "16px auto 0", textAlign: "left" }}>
             <Icon name="warning" size={14} colour={t.accentPop} />
             <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5, margin: 0 }}>
@@ -1214,9 +1212,22 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   const [micError, setMicError] = useState(null);
   const [onboardingInvalid, setOnboardingInvalid] = useState(false);
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
+  const [paid, setPaid] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("paid") === "true";
+  });
+  const [pendingAnswers, setPendingAnswers] = useState(null);
   const recognitionRef = useRef(null);
   const sessionIdRef = useRef(null);
   useScrollToTop("coaching");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paid") === "true") {
+      setPaid(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -1404,21 +1415,23 @@ Use what you know about them:
 - Their worry going in: ${userInfo.worry || "not specified"}
 - The role they're applying for: ${bank.label} — ${jd.slice(0, 300)}
 
+IMPORTANT — worry: If their stated worry is directly relevant to this question or to how they answered it, acknowledge it and coach toward it explicitly. Don't force it where it doesn't fit, but when it does connect, name it. For example: if they said they haven't interviewed in 15 years and their answer sounds rehearsed or stilted, call that out kindly and help them sound more natural. If they said they lack confidence and their answer undersells them, point to the specific moment they did that and show them how to own it instead.
+
 Give feedback in exactly these 3 sections, using these exact headers:
 
 What landed well:
 (1-2 sentences — name something specific and genuine from their answer, connected to what this role needs)
 
 What to sharpen:
-(1-2 sentences — one specific, actionable improvement tied to this role or their background)
+(1-2 sentences — one specific, actionable improvement tied to this role or their background. If their worry is relevant here, address it directly.)
 
 Try saying it like this:
-(Rewrite their answer in 2-3 punchy sentences they could actually use in the room — make it sound like them, not a template)
+(Rewrite their answer in 2-3 punchy sentences they could actually use in the room — make it sound like them, not a template. If their worry affects their delivery, this rewrite should model what confident, natural delivery looks like.)
 
 Question asked: ${questions[currentQ]}
 Their answer: ${answer}
 
-Keep the whole response under 200 words. Be a coach, not a critic. No bullet points, no markdown symbols — just the three plain sections with their headers.`,
+Keep the whole response under 220 words. Be a coach, not a critic. No bullet points, no markdown symbols — just the three plain sections with their headers.`,
           }],
         }),
       });
@@ -1456,6 +1469,13 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
 
     const isLastQuestion = currentQ + 1 >= questions.length;
 
+    // Paywall: gate after Q3 (index 2) if not paid
+    if (currentQ === 2 && !paid) {
+      setPendingAnswers(newAnswers);
+      setPhase("paywall");
+      return;
+    }
+
     if (sessionIdRef.current) {
       supabaseUpdate(sessionIdRef.current, {
         questions_answered: newAnswers.filter(a => a.genuine).length,
@@ -1466,6 +1486,21 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
     if (isLastQuestion) { onFinish(newAnswers); }
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
+
+  useEffect(() => {
+    if (paid && phase === "paywall" && pendingAnswers) {
+      setPendingAnswers(null);
+      const isLastQuestion = currentQ + 1 >= questions.length;
+      if (sessionIdRef.current) {
+        supabaseUpdate(sessionIdRef.current, {
+          questions_answered: pendingAnswers.filter(a => a.genuine).length,
+          completed: isLastQuestion,
+        });
+      }
+      if (isLastQuestion) { onFinish(pendingAnswers); }
+      else { setCurrentQ(c => c + 1); setPhase("answering"); }
+    }
+  }, [paid]);
 
   function skipQuestion() {
     const newAnswers = [...answers, {
@@ -1664,11 +1699,73 @@ Keep the whole response under 200 words. Be a coach, not a critic. No bullet poi
           )}
         </div>
       )}
+      {phase === "paywall" && (
+        <div className="fade-in" style={{ maxWidth: 520, margin: "40px auto 0", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: "50%", background: t.tag, marginBottom: 14 }}>
+              <Icon name="star" size={24} colour={t.accentGreen} />
+            </div>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+              You're doing great.
+            </h2>
+            <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, maxWidth: 380, margin: "0 auto" }}>
+              You've completed 3 questions and built up real coaching on each. Unlock the rest of your session to keep going and get your personalised cheat sheet at the end.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+            <a
+              href={`https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?prefilled_email=&client_reference_id=session`}
+              style={{ textDecoration: "none" }}
+            >
+              <div className="hover-lift" style={{
+                background: t.accentGreen, borderRadius: 10, padding: "20px 24px",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                cursor: "pointer",
+              }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 3 }}>Single session</div>
+                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>Finish this session + your cheat sheet</div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>£5</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
+                </div>
+              </div>
+            </a>
+
+            <a
+              href={`https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02`}
+              style={{ textDecoration: "none" }}
+            >
+              <div className="hover-lift" style={{
+                background: "#fff", border: `2px solid ${t.accentPop}`, borderRadius: 10, padding: "20px 24px",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                cursor: "pointer", position: "relative",
+              }}>
+                <div style={{ position: "absolute", top: -10, left: 16 }}>
+                  <Tag colour={t.accentPop} textColour="#fff">Best value</Tag>
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 3 }}>Bundle — 3 sessions</div>
+                  <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Three full sessions — prep for different roles or share with a friend</div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: t.accentPop }}>£12</div>
+                  <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
+            Secure payment via Stripe. You'll be returned here immediately after paying to continue your session.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
-
-// ── Summary ───────────────────────────────────────────────────────
 function SummaryStep({ answers, userInfo, category, onRestart }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
@@ -1720,32 +1817,49 @@ function SummaryStep({ answers, userInfo, category, onRestart }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 700,
+          max_tokens: 1200,
           messages: [{
             role: "user",
-            content: `You are creating a pre-interview cheat sheet — not a session debrief. This is something the candidate reads 10 minutes before walking into the room. It should make them feel prepared, armed, and confident. Think boxer's corner card, not post-match analysis.
+            content: `You are creating a personalised pre-interview cheat sheet. This is what the candidate reads 10 minutes before walking into the room. It should feel like it was written specifically for them — because it was. Pull from their actual words, their actual stories, their actual coaching feedback. Nothing generic. Nothing they could have read anywhere else.
 
 IMPORTANT CONTEXT: The candidate answered ${genuineCount} out of ${totalCount} questions genuinely.
-${genuineCount <= 2 ? `They answered very few questions. Be honest — tell them the cheat sheet is limited because there wasn't enough to work with, and nudge them to come back and complete a full session before their interview. Keep it brief and direct.` : `Build this from what they actually said — pull real phrases and stories from their answers, not generic advice.`}
+${genuineCount <= 2 ? `They answered very few questions. Be honest — tell them the cheat sheet is limited because there wasn't enough to work with, and nudge them to come back and complete a full session before their interview. Keep it brief and direct.` : `Build everything from what they actually said and what the coach flagged — not from the questions alone.`}
 
-Use exactly these 4 sections with plain text headers followed by a colon. No asterisks, dashes, or markdown formatting in headers:
+CANDIDATE CONTEXT:
+- Background: ${userInfo.background}
+- Why this role: ${userInfo.why}
+- Their stated worry going in: ${userInfo.worry || "none given"}
+- Role category: ${cat.label}
 
-Your ammunition:
-(2-3 bullet points using • only — name their strongest specific stories or examples from this session. Write each as: "The [situation] story — use this when they ask about [topic]". Make it immediately usable, not descriptive.)
+THEIR SESSION — questions, answers, and coaching they received:
+${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.q}
+Their answer: ${a.a}
+Coaching they received: ${a.feedback}`).join("\n\n")}
 
-Land these phrases:
-(2 bullet points using • only — pull the most compelling specific lines or phrases from their actual answers that they should use verbatim or close to it. Quote them directly if strong enough.)
+INSTRUCTIONS:
+If they named a specific worry (e.g. "15 years since I interviewed", "I struggle with confidence", "I don't have a degree"), you MUST address it directly in at least one section. Don't let them walk in still carrying it unaddressed.
 
-Watch out for:
-(2 bullet points using • only — one specific thing to improve, one reminder about delivery or structure. Forward-facing, not critical.)
+Use exactly these 5 sections. Plain text headers followed by a colon on their own line. No asterisks, no dashes, no markdown. Bullets use • only.
+
+Your strongest stories:
+3-4 bullets. Each one names a specific story or example from their actual answers and tells them exactly when to use it. Format each as: "The [brief situation label] story — use this when they ask about [topic]." Pull real details. No invented examples.
+
+Lines worth keeping:
+2-3 bullets. Pull the most compelling phrases or sentences they actually said — the ones the coaching flagged as strong or the ones that showed real self-awareness. Quote close to verbatim where possible. These are lines they should consciously plan to say.
+
+Things to sharpen:
+3 bullets. Based on patterns the coaching flagged across the session — not one-off criticisms. Specific and actionable. If the same issue came up more than once (e.g. vague examples, underselling, running too long), name it as a pattern and tell them how to fix it going in.
+
+Your pattern:
+One short paragraph, 3-4 sentences. Reflect back what you noticed across all their answers — what they consistently do well, what they consistently hold back on, and the single most important thing they could do differently in the room tomorrow. Make it feel like a coach who has been watching them, not a report card.
 
 Walk in with this:
-(One punchy, energising sentence. Make it feel personal to their background and this role. This is the last thing they read before they go in.)
+One sentence only. Make it personal to their background, their specific worry if they named one, and this role. This is the last thing they read before they go in. Make it land.
 
-Then after the four sections add:
+Then after the five sections add:
 
 Go deeper:
-(1-3 clickable article links from aievolvingyou.com — only include ones genuinely relevant to what this candidate needs to work on. Format each as: Label text: URL on its own line.)
+1-3 clickable article links from aievolvingyou.com — only include ones genuinely relevant to what the coaching flagged in this session. Format each as: Label text: URL on its own line.
 
 Available articles:
 • The STAR Method — how to structure any behavioural answer: https://aievolvingyou.com/resources/star-method
@@ -1755,13 +1869,7 @@ Available articles:
 • How to use AI to prepare for interviews: https://aievolvingyou.com/resources/ai-interview-prep
 • How to interview after a long career gap: https://aievolvingyou.com/resources/interviewing-after-long-gap
 
-RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers are plain text followed by a colon on their own line. Keep the whole thing under 250 words — tight and punchy, not comprehensive.
-
-Candidate background: ${userInfo.background}
-Why they want this role: ${userInfo.why}
-Their biggest worry: ${userInfo.worry || "not specified"}
-Role category: ${cat.label}
-Session answers: ${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.q}\nA: ${a.a}`).join("\n\n")}`,
+RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers are plain text followed by a colon on their own line. Be specific, be personal, be useful.`,
           }],
         }),
       });
