@@ -1790,9 +1790,8 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
           position: "fixed", inset: 0, zIndex: 100,
           background: "rgba(255,255,255,0.97)",
           backdropFilter: "blur(8px)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "24px",
           overflowY: "auto",
+          padding: "40px 24px",
         }}>
           <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 28 }}>
