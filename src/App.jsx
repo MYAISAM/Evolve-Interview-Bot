@@ -30,6 +30,43 @@ async function supabaseUpdate(sessionId, updates) {
   } catch (e) { console.error("Session update error:", e); }
 }
 
+async function saveSessionState(sessionState) {
+  if (!currentAccessToken) return null;
+  try {
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "saveSessionState", sessionState, accessToken: currentAccessToken }),
+    });
+    const data = await res.json();
+    return data.success ? data.sessionId : null;
+  } catch (e) { console.error("Save session state error:", e); return null; }
+}
+
+async function restoreSessionState(sessionId) {
+  if (!currentAccessToken || !sessionId) return null;
+  try {
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restoreSessionState", sessionId, accessToken: currentAccessToken }),
+    });
+    const data = await res.json();
+    return data.success ? data.session : null;
+  } catch (e) { console.error("Restore session state error:", e); return null; }
+}
+
+async function addCreditsAfterPayment(tier) {
+  if (!currentAccessToken || !currentUser) return;
+  try {
+    await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "addCredits", tier, userId: currentUser.id, accessToken: currentAccessToken }),
+    });
+  } catch (e) { console.error("Add credits error:", e); }
+}
+
 function generateToken() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
@@ -860,7 +897,7 @@ function useScrollToTop(dep) {
 }
 
 // ── Auth Step ─────────────────────────────────────────────────────
-function AuthStep({ onAuth, onSkip }) {
+function AuthStep({ onAuth }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -890,14 +927,12 @@ function AuthStep({ onAuth, onSkip }) {
         </div>
         <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 10 }}>Check your email</h2>
         <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
-          We've sent a magic link to <strong>{email}</strong>. Click it to save your session automatically — no password needed.
+          We've sent a magic link to <strong>{email}</strong>. Click it to access your account — no password needed.
         </p>
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, padding: "12px 16px", marginBottom: 24 }}>
           <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Link not arrived? Check your spam folder or wait 30 seconds and try again.</p>
         </div>
-        <button onClick={onSkip} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 13, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>
-          Continue without saving my session
-        </button>
+
       </div>
     );
   }
@@ -905,9 +940,9 @@ function AuthStep({ onAuth, onSkip }) {
   return (
     <div className="fade-up" style={{ maxWidth: 480, margin: "0 auto", padding: "60px 24px" }}>
       <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Save your session</Tag></div>
-      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, margin: "12px 0 8px" }}>Get a link to save your cheat sheet</h2>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, margin: "12px 0 8px" }}>Create your free account</h2>
       <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, marginBottom: 28, fontWeight: 300 }}>
-        Enter your email and we'll send you a magic link. No password. Your session and cheat sheet will be saved so you can come back to them.
+        No password needed. Just your email and we'll send you a link. Your sessions and cheat sheets are saved automatically so you can come back any time.
       </p>
       <div style={{ marginBottom: 16 }}>
         <input
@@ -921,7 +956,7 @@ function AuthStep({ onAuth, onSkip }) {
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <Btn onClick={sendMagicLink} disabled={loading}>{loading ? "Sending…" : "Send my magic link →"}</Btn>
-        <button onClick={onSkip} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 13, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>Skip for now</button>
+
       </div>
       <p style={{ fontSize: 11, color: t.inkLight, marginTop: 16, lineHeight: 1.5, fontStyle: "italic" }}>No spam. We only email you this link and product updates if you opt in.</p>
     </div>
@@ -1198,7 +1233,7 @@ function AboutStep({ onNext }) {
 }
 
 // ── Coaching Session ──────────────────────────────────────────────
-function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinish, onBackToAbout }) {
+function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restoredSession, onFinish, onBackToAbout }) {
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -1212,22 +1247,27 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
   const [micError, setMicError] = useState(null);
   const [onboardingInvalid, setOnboardingInvalid] = useState(false);
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
-  const [paid, setPaid] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("paid") === "true";
-  });
+  const [paid, setPaid] = useState(true); // paid is always true when reaching CoachingStep post-payment
   const [pendingAnswers, setPendingAnswers] = useState(null);
   const recognitionRef = useRef(null);
   const sessionIdRef = useRef(null);
   useScrollToTop("coaching");
 
+  // Restore session state if returning from Stripe
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("paid") === "true") {
-      setPaid(true);
-      window.history.replaceState(null, "", window.location.pathname);
+    if (restoredSession) {
+      const s = restoredSession;
+      if (s.questions && s.questions.length > 0) {
+        setQuestions(s.questions);
+        setQuestionTypes(s.question_types || []);
+        setAnswers(s.answers || []);
+        setCurrentQ(s.current_q || 3);
+        sessionIdRef.current = s.id;
+        setPhase("answering");
+        return; // Skip normal question generation
+      }
     }
-  }, []);
+  }, [restoredSession]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -1274,7 +1314,11 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, onFinis
     else { recognitionRef.current.start(); setIsListening(true); }
   }
 
-  useEffect(() => { buildQuestions(); }, []);
+  useEffect(() => {
+    // Skip question generation if we restored a session from Stripe return
+    if (restoredSession && restoredSession.questions && restoredSession.questions.length > 0) return;
+    buildQuestions();
+  }, []);
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [currentQ]);
 
   async function buildQuestions() {
@@ -1473,6 +1517,24 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
     if (currentQ === 2 && !paid) {
       setPendingAnswers(newAnswers);
       setPhase("paywall");
+      // Save full session state to Supabase so we can restore after Stripe redirect
+      if (currentAccessToken) {
+        saveSessionState({
+          session_token: sessionIdRef.current || generateToken(),
+          user_id: currentUser?.id,
+          role_family: bank?.label || "",
+          category_label: bank?.label || "",
+          jd: jd || "",
+          user_info: userInfo,
+          questions: questions,
+          question_types: questionTypes,
+          answers: newAnswers,
+          current_q: 3,
+          paid: false,
+        }).then(savedId => {
+          if (savedId) sessionIdRef.current = savedId;
+        });
+      }
       return;
     }
 
@@ -1700,67 +1762,103 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
         </div>
       )}
       {phase === "paywall" && (
-        <div className="fade-in" style={{ maxWidth: 520, margin: "40px auto 0", padding: "0 24px" }}>
-          <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: "50%", background: t.tag, marginBottom: 14 }}>
-              <Icon name="star" size={24} colour={t.accentGreen} />
+        <div className="fade-in" style={{
+          position: "fixed", inset: 0, zIndex: 100,
+          background: "rgba(255,255,255,0.97)",
+          backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "24px",
+          overflowY: "auto",
+        }}>
+          <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: "50%", background: t.tag, marginBottom: 14 }}>
+                <Icon name="star" size={24} colour={t.accentGreen} />
+              </div>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+                You're doing great.
+              </h2>
+              <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, maxWidth: 360, margin: "0 auto" }}>
+                You've completed 3 questions with real coaching on each. Unlock the rest of your session to keep going and get your personalised cheat sheet at the end.
+              </p>
             </div>
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
-              You're doing great.
-            </h2>
-            <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, maxWidth: 380, margin: "0 auto" }}>
-              You've completed 3 questions and built up real coaching on each. Unlock the rest of your session to keep going and get your personalised cheat sheet at the end.
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <a
+                href={`https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=${sessionIdRef.current || "session"}`}
+                style={{ textDecoration: "none" }}
+              >
+                <div className="hover-lift" style={{
+                  background: t.accentGreen, borderRadius: 10, padding: "20px 24px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  cursor: "pointer",
+                }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 3 }}>Single session</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>Finish this session + your cheat sheet</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>£5</div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href={`https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02?client_reference_id=${sessionIdRef.current || "session"}`}
+                style={{ textDecoration: "none" }}
+              >
+                <div className="hover-lift" style={{
+                  background: "#fff", border: `2px solid ${t.accentPop}`, borderRadius: 10, padding: "20px 24px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  cursor: "pointer", position: "relative",
+                }}>
+                  <div style={{ position: "absolute", top: -10, left: 16 }}>
+                    <Tag colour={t.accentPop} textColour="#fff">Best value</Tag>
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 3 }}>Bundle — 3 sessions</div>
+                    <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Three full sessions — use for different roles or rounds</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: t.accentPop }}>£12</div>
+                    <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
+                  </div>
+                </div>
+              </a>
+
+              <div style={{ position: "relative", margin: "4px 0" }}>
+                <div style={{ height: 1, background: t.border }} />
+                <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "0 10px", fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em" }}>or</span>
+              </div>
+
+              <a
+                href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=gift_single"
+                style={{ textDecoration: "none" }}
+              >
+                <div className="hover-lift" style={{
+                  background: t.surface, border: `1.5px dashed ${t.border}`, borderRadius: 10, padding: "16px 24px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  cursor: "pointer",
+                }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: t.ink, marginBottom: 3 }}>
+                      🎁 Buy as a gift
+                    </div>
+                    <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Send a session to someone who needs it — they get a code to unlock their own</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: t.inkMid }}>£5</div>
+                    <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>gift</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
+              Secure payment via Stripe. You'll be returned here immediately after paying to continue your session.
             </p>
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-            <a
-              href={`https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?prefilled_email=&client_reference_id=session`}
-              style={{ textDecoration: "none" }}
-            >
-              <div className="hover-lift" style={{
-                background: t.accentGreen, borderRadius: 10, padding: "20px 24px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                cursor: "pointer",
-              }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 3 }}>Single session</div>
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>Finish this session + your cheat sheet</div>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>£5</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
-                </div>
-              </div>
-            </a>
-
-            <a
-              href={`https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02`}
-              style={{ textDecoration: "none" }}
-            >
-              <div className="hover-lift" style={{
-                background: "#fff", border: `2px solid ${t.accentPop}`, borderRadius: 10, padding: "20px 24px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                cursor: "pointer", position: "relative",
-              }}>
-                <div style={{ position: "absolute", top: -10, left: 16 }}>
-                  <Tag colour={t.accentPop} textColour="#fff">Best value</Tag>
-                </div>
-                <div style={{ marginTop: 4 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 3 }}>Bundle — 3 sessions</div>
-                  <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Three full sessions — prep for different roles or share with a friend</div>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: t.accentPop }}>£12</div>
-                  <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
-                </div>
-              </div>
-            </a>
-          </div>
-
-          <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
-            Secure payment via Stripe. You'll be returned here immediately after paying to continue your session.
-          </p>
         </div>
       )}
     </div>
@@ -2205,13 +2303,13 @@ export default function App() {
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
   const [authed, setAuthed] = useState(false);
+  const [restoredSession, setRestoredSession] = useState(null);
 
 useEffect(() => {
   const hash = window.location.hash;
   if (!hash) return;
   const params = new URLSearchParams(hash.replace("#", "?"));
   const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
   if (!accessToken) return;
 
   fetch(AUTH_API, {
@@ -2231,6 +2329,46 @@ useEffect(() => {
     })
     .catch(e => console.error("Token catch error:", e));
 }, [setStep]);
+
+// ── Stripe return handler ─────────────────────────────────────────
+// Fires when user comes back from Stripe with ?paid=true&session_id=XXX
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const paid = params.get("paid");
+  const sessionId = params.get("session_id");
+  const tier = params.get("tier");
+
+  if (paid !== "true") return;
+
+  // Clean the URL immediately
+  window.history.replaceState(null, "", window.location.pathname);
+
+  // If we have a session ID and a logged in user, restore the session
+  if (sessionId && currentAccessToken) {
+    addCreditsAfterPayment(tier || "single");
+    restoreSessionState(sessionId).then(session => {
+      if (session) {
+        // Restore all session state
+        setCategory(session.role_family || null);
+        setRoleFamily(session.role_family || null);
+        setCareerStage(session.career_stage || null);
+        setJd(session.jd || "");
+        setUserInfo(session.user_info || null);
+        setRestoredSession(session);
+        setStep(4);
+      }
+    });
+  } else {
+    // No session to restore (anonymous user or session save failed)
+    // Just mark as paid and go to step 4 if we have enough state
+    if (category && userInfo) {
+      setStep(4);
+    } else {
+      // Not enough state -- send them to start
+      setStep(1);
+    }
+  }
+}, []);
 
   function reset() {
     setStep(0); setCategory(null); setRoleFamily(null);
@@ -2261,7 +2399,6 @@ useEffect(() => {
           {step === 1 && (
             <AuthStep
               onAuth={(user, token) => { currentUser = user; currentAccessToken = token; setAuthed(true); setStep(2); }}
-              onSkip={() => setStep(2)}
             />
           )}
           {step === 2 && (
@@ -2277,6 +2414,7 @@ useEffect(() => {
               careerStage={careerStage}
               jd={jd}
               userInfo={userInfo}
+              restoredSession={restoredSession}
               onFinish={ans => { setSessionAnswers(ans); setStep(5); }}
               onBackToAbout={() => setStep(3)}
             />
