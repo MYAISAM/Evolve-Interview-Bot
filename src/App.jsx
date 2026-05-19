@@ -1277,7 +1277,7 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
 
-  const bank = QUESTION_BANK[category] || QUESTION_BANK[roleFamily];
+  const bank = QUESTION_BANK[category] || QUESTION_BANK[roleFamily] || QUESTION_BANK["general"];
 
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1730,8 +1730,8 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon name={bank.icon} size={16} colour={t.inkMid} />
-          <span style={{ fontSize: 13, color: t.inkMid }}>{bank.label}</span>
+          <Icon name={bank?.icon || "star"} size={16} colour={t.inkMid} />
+          <span style={{ fontSize: 13, color: t.inkMid }}>{bank?.label || ""}</span>
         </div>
         <span style={{ fontSize: 13, color: t.inkMid }}>{currentQ + 1} / {questions.length}</span>
       </div>
@@ -1740,7 +1740,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
       </div>
       <div style={{ marginBottom: 12 }}>
         {questionTypes[currentQ] === "curated"
-          ? <Tag colour={bank.colour} textColour={bank.borderColour}>From question bank</Tag>
+          ? <Tag colour={bank?.colour || t.tag} textColour={bank?.borderColour || t.inkMid}>From question bank</Tag>
           : <Tag colour="#fff3f0" textColour={t.accentPop}>From your job description</Tag>
         }
       </div>
