@@ -1531,7 +1531,11 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
           current_q: 3,
           paid: false,
         }).then(savedId => {
-          if (savedId) sessionIdRef.current = savedId;
+          if (savedId) {
+            sessionIdRef.current = savedId;
+            // Save to sessionStorage so Stripe redirect can restore it
+            sessionStorage.setItem("aey_session_id", savedId);
+          }
         });
       }
       return;
@@ -1594,7 +1598,11 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
           current_q: 3,
           paid: false,
         }).then(savedId => {
-          if (savedId) sessionIdRef.current = savedId;
+          if (savedId) {
+            sessionIdRef.current = savedId;
+            // Save to sessionStorage so Stripe redirect can restore it
+            sessionStorage.setItem("aey_session_id", savedId);
+          }
         });
       }
       return;
@@ -2345,39 +2353,51 @@ useEffect(() => {
 // Fires when user comes back from Stripe with ?paid=true&session_id=XXX
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
-  const paid = params.get("paid");
-  const sessionId = params.get("session_id");
+  const paidParam = params.get("paid");
   const tier = params.get("tier");
 
-  if (paid !== "true") return;
+  if (paidParam !== "true") return;
 
   // Clean the URL immediately
   window.history.replaceState(null, "", window.location.pathname);
 
-  // If we have a session ID and a logged in user, restore the session
-  if (sessionId && currentAccessToken) {
+  // Restore auth from sessionStorage if not already set
+  const savedToken = sessionStorage.getItem("aey_token");
+  const savedUser = sessionStorage.getItem("aey_user");
+  if (savedToken && savedUser && !currentAccessToken) {
+    currentAccessToken = savedToken;
+    currentUser = JSON.parse(savedUser);
+    setAuthed(true);
+  }
+
+  // Try to restore session from sessionStorage
+  const savedSessionId = sessionStorage.getItem("aey_session_id");
+
+  if (savedSessionId && currentAccessToken) {
+    // We have a session to restore
     addCreditsAfterPayment(tier || "single");
-    restoreSessionState(sessionId).then(session => {
+    restoreSessionState(savedSessionId).then(session => {
       if (session) {
-        // Restore all session state
         setCategory(session.role_family || null);
         setRoleFamily(session.role_family || null);
         setCareerStage(session.career_stage || null);
         setJd(session.jd || "");
         setUserInfo(session.user_info || null);
         setRestoredSession(session);
+        sessionStorage.removeItem("aey_session_id");
         setStep(4);
+      } else {
+        // Session restore failed -- send to auth
+        setStep(1);
       }
     });
+  } else if (currentAccessToken) {
+    // Logged in but no saved session -- just mark paid and go to start
+    addCreditsAfterPayment(tier || "single");
+    setStep(2);
   } else {
-    // No session to restore (anonymous user or session save failed)
-    // Just mark as paid and go to step 4 if we have enough state
-    if (category && userInfo) {
-      setStep(4);
-    } else {
-      // Not enough state -- send them to start
-      setStep(1);
-    }
+    // Not logged in -- send to magic link
+    setStep(1);
   }
 }, []);
 
