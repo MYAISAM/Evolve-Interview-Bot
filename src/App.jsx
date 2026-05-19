@@ -1646,6 +1646,78 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
 
   const progress = questions.length > 0 ? currentQ / questions.length : 0;
 
+  // Paywall renders independently -- before the question card outer wrapper
+  if (phase === "paywall") {
+    return (
+      <div className="fade-in" style={{ maxWidth: 480, margin: "40px auto 0", padding: "0 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: "50%", background: t.tag, marginBottom: 14 }}>
+            <Icon name="star" size={24} colour={t.accentGreen} />
+          </div>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
+            You're doing great.
+          </h2>
+          <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, maxWidth: 360, margin: "0 auto" }}>
+            You've completed 3 questions with real coaching on each. Unlock the rest of your session to keep going and get your personalised cheat sheet at the end.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+          <a href={`https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=${sessionIdRef.current || "session"}`} style={{ textDecoration: "none" }}>
+            <div className="hover-lift" style={{ background: t.accentGreen, borderRadius: 10, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 3 }}>Single session</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>Finish this session + your cheat sheet</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>£5</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
+              </div>
+            </div>
+          </a>
+
+          <a href={`https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02?client_reference_id=${sessionIdRef.current || "session"}`} style={{ textDecoration: "none" }}>
+            <div className="hover-lift" style={{ background: "#fff", border: `2px solid ${t.accentPop}`, borderRadius: 10, padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", position: "relative" }}>
+              <div style={{ position: "absolute", top: -10, left: 16 }}>
+                <Tag colour={t.accentPop} textColour="#fff">Best value</Tag>
+              </div>
+              <div style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 3 }}>Bundle — 3 sessions</div>
+                <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Three full sessions — use for different roles or rounds</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: t.accentPop }}>£12</div>
+                <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
+              </div>
+            </div>
+          </a>
+
+          <div style={{ position: "relative", margin: "4px 0" }}>
+            <div style={{ height: 1, background: t.border }} />
+            <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "0 10px", fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em" }}>or</span>
+          </div>
+
+          <a href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=gift_single" style={{ textDecoration: "none" }}>
+            <div className="hover-lift" style={{ background: t.surface, border: `1.5px dashed ${t.border}`, borderRadius: 10, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: t.ink, marginBottom: 3 }}>🎁 Buy as a gift</div>
+                <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Send a session to someone who needs it — they get a code to unlock their own</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: t.inkMid }}>£5</div>
+                <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>gift</div>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
+          Secure payment via Stripe. You'll be returned here immediately after paying to continue your session.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -1785,105 +1857,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
           )}
         </div>
       )}
-      {phase === "paywall" && (
-        <div className="fade-in" style={{
-          position: "fixed", inset: 0, zIndex: 100,
-          background: "rgba(255,255,255,0.97)",
-          backdropFilter: "blur(8px)",
-          overflowY: "auto",
-          padding: "40px 24px",
-        }}>
-          <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
-            <div style={{ textAlign: "center", marginBottom: 28 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: "50%", background: t.tag, marginBottom: 14 }}>
-                <Icon name="star" size={24} colour={t.accentGreen} />
-              </div>
-              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 8, letterSpacing: "-0.01em" }}>
-                You're doing great.
-              </h2>
-              <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, maxWidth: 360, margin: "0 auto" }}>
-                You've completed 3 questions with real coaching on each. Unlock the rest of your session to keep going and get your personalised cheat sheet at the end.
-              </p>
-            </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-              <a
-                href={`https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=${sessionIdRef.current || "session"}`}
-                style={{ textDecoration: "none" }}
-              >
-                <div className="hover-lift" style={{
-                  background: t.accentGreen, borderRadius: 10, padding: "20px 24px",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  cursor: "pointer",
-                }}>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 3 }}>Single session</div>
-                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.4 }}>Finish this session + your cheat sheet</div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>£5</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
-                  </div>
-                </div>
-              </a>
-
-              <a
-                href={`https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02?client_reference_id=${sessionIdRef.current || "session"}`}
-                style={{ textDecoration: "none" }}
-              >
-                <div className="hover-lift" style={{
-                  background: "#fff", border: `2px solid ${t.accentPop}`, borderRadius: 10, padding: "20px 24px",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  cursor: "pointer", position: "relative",
-                }}>
-                  <div style={{ position: "absolute", top: -10, left: 16 }}>
-                    <Tag colour={t.accentPop} textColour="#fff">Best value</Tag>
-                  </div>
-                  <div style={{ marginTop: 4 }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: t.ink, marginBottom: 3 }}>Bundle — 3 sessions</div>
-                    <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Three full sessions — use for different roles or rounds</div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: t.accentPop }}>£12</div>
-                    <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>one-time</div>
-                  </div>
-                </div>
-              </a>
-
-              <div style={{ position: "relative", margin: "4px 0" }}>
-                <div style={{ height: 1, background: t.border }} />
-                <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "0 10px", fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em" }}>or</span>
-              </div>
-
-              <a
-                href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=gift_single"
-                style={{ textDecoration: "none" }}
-              >
-                <div className="hover-lift" style={{
-                  background: t.surface, border: `1.5px dashed ${t.border}`, borderRadius: 10, padding: "16px 24px",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  cursor: "pointer",
-                }}>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: t.ink, marginBottom: 3 }}>
-                      🎁 Buy as a gift
-                    </div>
-                    <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Send a session to someone who needs it — they get a code to unlock their own</div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: t.inkMid }}>£5</div>
-                    <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>gift</div>
-                  </div>
-                </div>
-              </a>
-            </div>
-
-            <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
-              Secure payment via Stripe. You'll be returned here immediately after paying to continue your session.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
