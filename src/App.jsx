@@ -1571,6 +1571,31 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
     setAnswer("");
     setFeedback("");
     setFeedbackIsGibberish(false);
+
+    // Same paywall gate as nextQuestion
+    if (currentQ === 2 && !paid) {
+      setPendingAnswers(newAnswers);
+      setPhase("paywall");
+      if (currentAccessToken) {
+        saveSessionState({
+          session_token: sessionIdRef.current || generateToken(),
+          user_id: currentUser?.id,
+          role_family: bank?.label || "",
+          category_label: bank?.label || "",
+          jd: jd || "",
+          user_info: userInfo,
+          questions: questions,
+          question_types: questionTypes,
+          answers: newAnswers,
+          current_q: 3,
+          paid: false,
+        }).then(savedId => {
+          if (savedId) sessionIdRef.current = savedId;
+        });
+      }
+      return;
+    }
+
     if (currentQ + 1 >= questions.length) { onFinish(newAnswers); }
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
