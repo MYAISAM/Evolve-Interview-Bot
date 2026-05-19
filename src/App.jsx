@@ -2302,6 +2302,17 @@ export default function App() {
   const [authed, setAuthed] = useState(false);
   const [restoredSession, setRestoredSession] = useState(null);
 
+  // Restore auth from sessionStorage on every load (survives Stripe redirect)
+  useEffect(() => {
+    const savedToken = sessionStorage.getItem("aey_token");
+    const savedUser = sessionStorage.getItem("aey_user");
+    if (savedToken && savedUser && !currentAccessToken) {
+      currentAccessToken = savedToken;
+      currentUser = JSON.parse(savedUser);
+      setAuthed(true);
+    }
+  }, []);
+
 useEffect(() => {
   const hash = window.location.hash;
   if (!hash) return;
@@ -2319,6 +2330,9 @@ useEffect(() => {
       if (data.success && data.user) {
         currentUser = data.user;
         currentAccessToken = accessToken;
+        // Persist token so Stripe redirect doesn't lose auth state
+        sessionStorage.setItem("aey_token", accessToken);
+        sessionStorage.setItem("aey_user", JSON.stringify(data.user));
         setAuthed(true);
         window.history.replaceState(null, "", window.location.pathname);
         setStep(2);
