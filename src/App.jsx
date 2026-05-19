@@ -1003,12 +1003,7 @@ function Landing({ onStart }) {
           </div>
           <Btn onClick={onStart} style={{ padding: "15px 40px", fontSize: 16 }}>Start your session →</Btn>
 
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "#fff8f0", border: `1px solid ${t.accentPop}30`, borderRadius: 8, padding: "10px 14px", maxWidth: 400, margin: "16px auto 0", textAlign: "left" }}>
-            <Icon name="warning" size={14} colour={t.accentPop} />
-            <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5, margin: 0 }}>
-               Your session and cheat sheet are not saved. Download your cheat sheet at the end before you close the tab.
-            </p>
-          </div>
+
         </div>
       </div>
       <Divider />
@@ -2022,10 +2017,10 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           <Icon name="warning" size={16} colour={t.accentGreen} />
           <div>
             <p style={{ fontSize: 14, fontWeight: 600, color: t.ink, marginBottom: 2 }}>
-              Save your cheat sheet before you go
+              Save as PDF
             </p>
             <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>
-              This session is not saved. Once you close this tab, your cheat sheet and coaching notes are gone.
+              Your session is saved to your account. Download a PDF copy to have it to hand before your interview.
             </p>
           </div>
         </div>
@@ -2275,7 +2270,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
             Send feedback →
           </Btn>
           <p style={{ fontSize: 11, color: t.inkLight, marginTop: 12, fontStyle: "italic", lineHeight: 1.5 }}>
-            Your written answers are used only to generate your coaching and cheat sheet and are not saved in this beta. Lightweight anonymous session tracking is currently disabled while we prepare the account-based version.
+            Your answers are used only to generate your coaching and cheat sheet. Your session is saved to your account automatically.
           </p>
         </div>
       ) : (
