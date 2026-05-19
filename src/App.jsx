@@ -1242,7 +1242,10 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
   const [micError, setMicError] = useState(null);
   const [onboardingInvalid, setOnboardingInvalid] = useState(false);
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
-  const [paid, setPaid] = useState(true); // paid is always true when reaching CoachingStep post-payment
+  const [paid, setPaid] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("paid") === "true";
+  });
   const [pendingAnswers, setPendingAnswers] = useState(null);
   const recognitionRef = useRef(null);
   const sessionIdRef = useRef(null);
@@ -1258,6 +1261,7 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
         setAnswers(s.answers || []);
         setCurrentQ(s.current_q || 3);
         sessionIdRef.current = s.id;
+        setPaid(true); // They've returned from Stripe -- unlock the session
         setPhase("answering");
         return; // Skip normal question generation
       }
