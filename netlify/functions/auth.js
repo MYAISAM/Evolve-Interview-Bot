@@ -149,7 +149,7 @@ exports.handler = async (event) => {
         sessionId = data[0].id;
       }
 
-      return ok({ sessionId });
+      return ok({ success: true, sessionId });
     }
 
     // ── Restore session state (called on return from Stripe) ──────
