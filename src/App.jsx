@@ -1437,7 +1437,9 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
             role: "user",
             content: `You are a warm, direct interview coach helping a real candidate prepare for a specific role. Give personalised, specific feedback — not generic advice.
 
-IMPORTANT: First check if the answer is genuine. If the answer is random characters, gibberish, a single word, or clearly not a real attempt (e.g. "asdfgh", "xxx", "idk"), do NOT give coaching feedback. Instead respond with only this exact text:
+IMPORTANT: First check if the answer is genuine. Gibberish means: random characters (e.g. "asdfgh"), keyboard mashing, a single meaningless word, or an answer with fewer than 8 real words that clearly has no meaning. A genuine attempt is ANY answer where the person has made a real effort to respond — even if short, rough, technically dense, full of jargon, or not directly answering the question. If in doubt, treat it as genuine and coach it. Only trigger the non-genuine response if you are certain the answer contains no real content whatsoever.
+
+If the answer is clearly not genuine, respond with only this exact text:
 
 What landed well:
 It looks like that answer might not have been a real attempt — that's completely fine, it happens.
@@ -1460,16 +1462,24 @@ Use what you know about them:
 
 IMPORTANT — worry: If their stated worry is directly relevant to this question or to how they answered it, acknowledge it and coach toward it explicitly. Don't force it where it doesn't fit, but when it does connect, name it. For example: if they said they haven't interviewed in 15 years and their answer sounds rehearsed or stilted, call that out kindly and help them sound more natural. If they said they lack confidence and their answer undersells them, point to the specific moment they did that and show them how to own it instead.
 
+FRAMEWORK INSTRUCTION: Where the question or answer calls for it, name the relevant framework explicitly in your coaching — use the exact label. The four frameworks are:
+- STAR (Situation, Task, Action, Result) — for past experience / behavioural questions ("tell me about a time...")
+- Claim + Evidence + Relevance — for competency / strengths questions ("what are your strengths?", "are you good at X?")
+- Research + Alignment + Enthusiasm — for motivation / fit questions ("why this role?", "why us?")
+- Bridge / Clarify / Reframe / Authentic + Boundaries — for challenging questions (weaknesses, failures, gaps, career changes, career breaks, redundancy, public sector to private sector moves)
+
+If the question clearly falls into one of these categories and the candidate's answer would benefit from the structure, name the framework in "What to sharpen" and explain briefly how to apply it to their specific answer. Do not force it where it does not fit naturally.
+
 Give feedback in exactly these 3 sections, using these exact headers:
 
 What landed well:
 (1-2 sentences — name something specific and genuine from their answer, connected to what this role needs)
 
 What to sharpen:
-(1-2 sentences — one specific, actionable improvement tied to this role or their background. If their worry is relevant here, address it directly.)
+(1-2 sentences — one specific, actionable improvement tied to this role or their background. If their worry is relevant here, address it directly. If a framework applies, name it here.)
 
 Try saying it like this:
-(Rewrite their answer in 2-3 punchy sentences they could actually use in the room — make it sound like them, not a template. If their worry affects their delivery, this rewrite should model what confident, natural delivery looks like.)
+(Rewrite their answer in 2-3 punchy sentences they could actually use in the room — make it sound like them, not a template. If their worry affects their delivery, this rewrite should model what confident, natural delivery looks like. If a framework applies, the rewrite should model it in action.)
 
 Question asked: ${questions[currentQ]}
 Their answer: ${answer}
@@ -1964,7 +1974,13 @@ One sentence only. Make it personal to their background, their specific worry if
 Then after the five sections add:
 
 Go deeper:
-1-3 clickable article links from aievolvingyou.com — only include ones genuinely relevant to what the coaching flagged in this session. Format each as: Label text: URL on its own line.
+1-3 article links from aievolvingyou.com. Only include ones genuinely relevant to what the coaching flagged in this session. For each link, write the label on one line, the URL on the next line, then one sentence on the line after explaining why it is relevant to this specific candidate based on their session. No em dashes in that sentence. Keep it direct and personal.
+
+MANDATORY LINK RULES. Always include the relevant article if the candidate's worry or answers match:
+- If their worry mentions career break, gap, time out, redundancy, or returning to work: you MUST include the career gap article
+- If their worry mentions career change, sector change, public sector, switching industry, or transferable skills: you MUST include the career changers article
+- If the coaching flagged vague or unstructured answers across multiple questions: you MUST include the STAR method article
+- If the coaching flagged underselling or lack of specifics: you MUST include the specificity principle article
 
 Available articles:
 • The STAR Method — how to structure any behavioural answer: https://aievolvingyou.com/resources/star-method
@@ -1973,6 +1989,8 @@ Available articles:
 • The specificity principle — why vague answers lose interviews: https://aievolvingyou.com/resources/specificity-principle
 • How to use AI to prepare for interviews: https://aievolvingyou.com/resources/ai-interview-prep
 • How to interview after a long career gap: https://aievolvingyou.com/resources/interviewing-after-long-gap
+• Returning to work after a career break — how to interview with confidence: https://aievolvingyou.com/resources/interviewing-after-long-gap
+• How to answer interview questions as a career changer: https://aievolvingyou.com/resources/career-changers
 
 RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers are plain text followed by a colon on their own line. Be specific, be personal, be useful.`,
           }],
