@@ -1475,7 +1475,7 @@ Use what you know about them:
 IMPORTANT — worry: If their stated worry is directly relevant to this question or to how they answered it, acknowledge it and coach toward it explicitly. Don't force it where it doesn't fit, but when it does connect, name it. For example: if they said they haven't interviewed in 15 years and their answer sounds rehearsed or stilted, call that out kindly and help them sound more natural. If they said they lack confidence and their answer undersells them, point to the specific moment they did that and show them how to own it instead.
 
 FRAMEWORK INSTRUCTION: Where the question or answer calls for it, name the relevant framework explicitly in your coaching — use the exact label. The four frameworks are:
-- STAR (Situation, Task, Action, Result) — for past experience / behavioural questions ("tell me about a time...")
+- STAR structure (Situation, Task, Action, Result) — for past experience / behavioural questions ("tell me about a time...")
 - Claim + Evidence + Relevance — for competency / strengths questions ("what are your strengths?", "are you good at X?")
 - Research + Alignment + Enthusiasm — for motivation / fit questions ("why this role?", "why us?")
 - Bridge / Clarify / Reframe / Authentic + Boundaries — for challenging questions (weaknesses, failures, gaps, career changes, career breaks, redundancy, public sector to private sector moves)
@@ -1724,23 +1724,6 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
             </div>
           </a>
 
-          <div style={{ position: "relative", margin: "4px 0" }}>
-            <div style={{ height: 1, background: t.border }} />
-            <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "0 10px", fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em" }}>or</span>
-          </div>
-
-          <a href="https://buy.stripe.com/4gM6oH4N4g0m1Aoamp5Ne03?client_reference_id=gift_single" style={{ textDecoration: "none" }}>
-            <div className="hover-lift" style={{ background: t.surface, border: `1.5px dashed ${t.border}`, borderRadius: 10, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: t.ink, marginBottom: 3 }}>🎁 Buy as a gift</div>
-                <div style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.4 }}>Send a session to someone who needs it — they get a code to unlock their own</div>
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: t.inkMid }}>£5</div>
-                <div style={{ fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em" }}>gift</div>
-              </div>
-            </div>
-          </a>
         </div>
 
         <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
@@ -2148,14 +2131,15 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
                 <p className="qa-q">Q{i + 1}: {item.q}</p>
                 <p className="qa-a">Your answer: {item.a}</p>
                 {item.feedback && (() => {
-                  const lines = item.feedback.split("\n");
-                  const sharpenIdx = lines.findIndex(l => l.toLowerCase().includes("sharpen"));
+                  const lines = item.feedback.split("\n").map(l => l.trim()).filter(Boolean);
+                  const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
+                  const sharpenIdx = lines.findIndex(l => l.toLowerCase().startsWith("what to sharpen"));
+                  const tryIdx = lines.findIndex(l => l.toLowerCase().startsWith("try saying"));
                   const coachingLine = sharpenIdx >= 0
-                    ? lines.slice(sharpenIdx + 1).find(l => l.trim().length > 20) || lines.find(l => l.trim().length > 20)
-                    : lines.find(l => l.trim().length > 20);
-                  const tryIdx = lines.findIndex(l => l.toLowerCase().includes("try saying"));
+                    ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l))
+                    : lines.find(l => l.length > 20 && !isHeader(l));
                   const tryLine = tryIdx >= 0
-                    ? lines.slice(tryIdx + 1).filter(l => l.trim().length > 20).join(" ")
+                    ? lines.slice(tryIdx + 1).filter(l => l.length > 20 && !isHeader(l)).join(" ")
                     : null;
                   return (
                     <>
