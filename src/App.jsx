@@ -1420,6 +1420,7 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
   }
 
   const GIBBERISH_SENTINEL = "might not have been a real attempt";
+  const OFFTOPIC_SENTINEL = "does not quite connect to what was asked";
 
   async function getFeedback() {
     setPhase("feedback");
@@ -1437,9 +1438,9 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
             role: "user",
             content: `You are a warm, direct interview coach helping a real candidate prepare for a specific role. Give personalised, specific feedback — not generic advice.
 
-IMPORTANT: First check if the answer is genuine. Gibberish means: random characters (e.g. "asdfgh"), keyboard mashing, a single meaningless word, or an answer with fewer than 8 real words that clearly has no meaning. A genuine attempt is ANY answer where the person has made a real effort to respond — even if short, rough, technically dense, full of jargon, or not directly answering the question. If in doubt, treat it as genuine and coach it. Only trigger the non-genuine response if you are certain the answer contains no real content whatsoever.
+IMPORTANT: First assess the answer against one of three categories:
 
-If the answer is clearly not genuine, respond with only this exact text:
+CATEGORY 1 — GIBBERISH: Random characters (e.g. "asdfgh"), keyboard mashing, a single meaningless word, or fewer than 8 real words with no meaning. If this, respond with only this exact text:
 
 What landed well:
 It looks like that answer might not have been a real attempt — that's completely fine, it happens.
@@ -1450,7 +1451,18 @@ Try answering as you would in the actual room. Even a rough, honest answer gives
 Try saying it like this:
 Start with one sentence about your experience, add what you did, and finish with the result or what you learned.
 
-If the answer IS genuine, continue with your normal coaching below.
+CATEGORY 2 — OFF-TOPIC: A genuine, real answer but clearly not responding to the question asked. The person has written something meaningful but it does not connect to what was asked. If this, respond with only this exact text but fill in the [brackets] based on the actual question and answer:
+
+What landed well:
+That sounds like a real experience and there is something worth using here.
+
+What to sharpen:
+It does not quite connect to what was asked though. The question was about [summarise the question in 6 words or fewer] — have another go with that in mind, or hit Move on if you would rather keep going.
+
+Try saying it like this:
+[Write 1-2 sentences showing how the experience they mentioned could actually be redirected to answer the question that was asked. If it genuinely cannot connect, just write: Take a fresh run at the question — even a rough answer gives us something real to work with.]
+
+CATEGORY 3 — GENUINE: A real attempt at the question, even if short, rough, technically dense, or imperfect. If in doubt, treat it as genuine. Coach it normally below.
 
 ${category === "tough_questions" ? `SPECIAL INSTRUCTION: This candidate has chosen to practise tough, bias-adjacent questions. When coaching their answer, focus especially on helping them reframe from defence to quiet confidence. Their non-traditional route, gap, or background is a strength — coach them to own it, not apologise for it.` : ""}
 
@@ -1491,7 +1503,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
       const data = await res.json();
       const feedbackText = data.content[0].text;
       setFeedback(feedbackText);
-      setFeedbackIsGibberish(feedbackText.includes(GIBBERISH_SENTINEL));
+      setFeedbackIsGibberish(feedbackText.includes(GIBBERISH_SENTINEL) || feedbackText.includes(OFFTOPIC_SENTINEL));
     } catch {
       setFeedback("What landed well:\nYou engaged with the question directly — that confidence matters.\n\nWhat to sharpen:\nAdd a specific example to make your answer more memorable.\n\nTry saying it like this:\nSet the scene briefly, explain what you did, and land on the result. That structure will stick with any interviewer.");
       setFeedbackIsGibberish(false);
