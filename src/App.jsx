@@ -1521,7 +1521,8 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
         saveSessionState({
           session_token: sessionIdRef.current || generateToken(),
           user_id: currentUser?.id,
-          role_family: bank?.label || "",
+          role_family: roleFamily || "",
+          career_stage: careerStage || "",
           category_label: bank?.label || "",
           jd: jd || "",
           user_info: userInfo,
@@ -1588,7 +1589,8 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
         saveSessionState({
           session_token: sessionIdRef.current || generateToken(),
           user_id: currentUser?.id,
-          role_family: bank?.label || "",
+          role_family: roleFamily || "",
+          career_stage: careerStage || "",
           category_label: bank?.label || "",
           jd: jd || "",
           user_info: userInfo,
@@ -1705,7 +1707,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
             <span style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "0 10px", fontSize: 11, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em" }}>or</span>
           </div>
 
-          <a href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01?client_reference_id=gift_single" style={{ textDecoration: "none" }}>
+          <a href="https://buy.stripe.com/4gM6oH4N4g0m1Aoamp5Ne03?client_reference_id=gift_single" style={{ textDecoration: "none" }}>
             <div className="hover-lift" style={{ background: t.surface, border: `1.5px dashed ${t.border}`, borderRadius: 10, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: t.ink, marginBottom: 3 }}>🎁 Buy as a gift</div>
