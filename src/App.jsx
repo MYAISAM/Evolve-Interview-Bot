@@ -2122,32 +2122,38 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
         </p>
         <hr className="divider" />
         <RenderMarkdown text={cheatSheet} />
-        {answers.filter(a => a.genuine).length > 0 && (
+        {answers.length > 0 && (
           <>
             <hr className="divider" />
             <h2>Session Recap</h2>
-            {answers.filter(a => a.genuine).map((item, i) => (
+            {answers.map((item, i) => (
               <div key={i} className="qa-block">
                 <p className="qa-q">Q{i + 1}: {item.q}</p>
-                <p className="qa-a">Your answer: {item.a}</p>
-                {item.feedback && (() => {
-                  const lines = item.feedback.split("\n").map(l => l.trim()).filter(Boolean);
-                  const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
-                  const sharpenIdx = lines.findIndex(l => l.toLowerCase().startsWith("what to sharpen"));
-                  const tryIdx = lines.findIndex(l => l.toLowerCase().startsWith("try saying"));
-                  const coachingLine = sharpenIdx >= 0
-                    ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l))
-                    : lines.find(l => l.length > 20 && !isHeader(l));
-                  const tryLine = tryIdx >= 0
-                    ? lines.slice(tryIdx + 1).filter(l => l.length > 20 && !isHeader(l)).join(" ")
-                    : null;
-                  return (
-                    <>
-                      {coachingLine && <p className="qa-coaching">Coaching: {coachingLine}</p>}
-                      {tryLine && <p className="qa-coaching" style={{ marginTop: 4 }}>Try saying it like this: {tryLine}</p>}
-                    </>
-                  );
-                })()}
+                {!item.genuine || !item.a ? (
+                  <p className="qa-a" style={{ color: "#999", fontStyle: "italic" }}>This question was skipped.</p>
+                ) : (
+                  <>
+                    <p className="qa-a">Your answer: {item.a && item.a.length > 600 ? item.a.slice(0, 600) + "..." : item.a}</p>
+                    {item.feedback && (() => {
+                      const lines = item.feedback.split("\n").map(l => l.trim()).filter(Boolean);
+                      const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
+                      const sharpenIdx = lines.findIndex(l => l.toLowerCase().startsWith("what to sharpen"));
+                      const tryIdx = lines.findIndex(l => l.toLowerCase().startsWith("try saying"));
+                      const coachingLine = sharpenIdx >= 0
+                        ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l))
+                        : lines.find(l => l.length > 20 && !isHeader(l));
+                      const tryLine = tryIdx >= 0
+                        ? lines.slice(tryIdx + 1).filter(l => l.length > 20 && !isHeader(l)).join(" ")
+                        : null;
+                      return (
+                        <>
+                          {coachingLine && <p className="qa-coaching">Coaching: {coachingLine}</p>}
+                          {tryLine && <p className="qa-coaching" style={{ marginTop: 4 }}>Try saying it like this: {tryLine}</p>}
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
               </div>
             ))}
           </>
