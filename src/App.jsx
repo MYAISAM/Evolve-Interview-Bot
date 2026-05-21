@@ -1236,7 +1236,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
       </h2>
       <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, fontWeight: 300 }}>
         {isReturning
-          ? "Your profile is saved. Just tell us about this specific role and we'll build your session around it."
+          ? "Your profile is saved. Just tell us about this specific role."
           : "This shapes every question and all the coaching you receive."
         }
       </p>
@@ -1279,7 +1279,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
               Your background <span style={{ color: t.accentPop }}>*</span>
             </label>
             <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
-              Current or most recent role — 1 to 2 sentences is fine. Saved to your profile.
+              Current or most recent role — 1 to 2 sentences. Saved to your profile for next time.
             </p>
             <textarea
               value={background} onChange={e => setBackground(e.target.value)} rows={3}
@@ -1986,8 +1986,6 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
 function SummaryStep({ answers, userInfo, category, sessionId, onRestart, onViewHistory }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
-  const [feedbackText, setFeedbackText] = useState({});
-  const [feedbackSent, setFeedbackSent] = useState(false);
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
 
@@ -2274,161 +2272,6 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
         <p style={{ fontSize: 11, color: "#999999" }}>coach.aievolvingyou.com</p>
       </div>
 
-      <div style={{ background: "#fff8f6", border: `1px solid ${t.accentPop}25`, borderRadius: 10, padding: "14px 18px", marginBottom: 40 }}>
-        <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6 }}>
-          <strong style={{ color: t.accentPop }}>Beta note:</strong> You're one of the first people to use this tool. Session history, progress tracking, and voice mode are all coming — see the full roadmap on the <a href="/" style={{ color: t.accentPop }}>homepage</a>.
-        </p>
-      </div>
-
-      <Divider />
-
-      {!feedbackSent ? (
-        <div className="fade-in">
-          <div style={{ marginBottom: 6 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Before you go</Tag></div>
-          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Five quick questions.</h3>
-          <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, lineHeight: 1.6, fontWeight: 300 }}>
-            This tool is free during beta. In return, we'd love 3 minutes of honest feedback across five quick questions — it directly shapes what gets built next.
-          </p>
-
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>1. What was the hardest question in today's session?</label>
-            <textarea rows={3} onChange={e => setFeedbackText(prev => ({ ...prev, q1: e.target.value }))}
-              placeholder="The question that made you think hardest…"
-              style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none" }} />
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>2. Did the coaching feel relevant to your actual role?</label>
-            <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-              {["Yes, very", "Mostly", "Not really"].map(opt => (
-                <button key={opt} onClick={() => setFeedbackText(prev => ({ ...prev, q2: opt }))} style={{
-                  padding: "8px 16px", borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: "pointer",
-                  fontFamily: "'Inter', sans-serif", transition: "all 0.15s",
-                  background: feedbackText.q2 === opt ? t.accentGreen : t.surface,
-                  color: feedbackText.q2 === opt ? "#fff" : t.ink,
-                  border: `1.5px solid ${feedbackText.q2 === opt ? t.accentGreen : t.border}`,
-                }}>{opt}</button>
-              ))}
-            </div>
-            <textarea rows={2} onChange={e => setFeedbackText(prev => ({ ...prev, q2detail: e.target.value }))}
-              placeholder="Any detail helps — even one sentence…"
-              style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none" }} />
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>3. Anything you wished we'd asked you?</label>
-            <textarea rows={2} onChange={e => setFeedbackText(prev => ({ ...prev, q3: e.target.value }))}
-              placeholder="A question you were expecting but didn't get…"
-              style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none" }} />
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 6 }}>4. Which of these would make you come back to this tool?</label>
-            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 12, fontStyle: "italic" }}>Select all that apply</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {FEATURES.map((feat, i) => {
-                const selected = (feedbackText.q4 || []).includes(feat);
-                return (
-                  <div key={i} onClick={() => setFeedbackText(prev => {
-                    const current = prev.q4 || [];
-                    return { ...prev, q4: selected ? current.filter(f => f !== feat) : [...current, feat] };
-                  })} style={{
-                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                    background: selected ? t.tag : t.surface,
-                    border: `1.5px solid ${selected ? t.accentGreen : t.border}`,
-                    borderRadius: 8, cursor: "pointer", transition: "all 0.15s",
-                  }}>
-                    <div style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0, background: selected ? t.accentGreen : "#fff", border: `1.5px solid ${selected ? t.accentGreen : t.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {selected && <Icon name="check" size={11} colour="#fff" />}
-                    </div>
-                    <span style={{ fontSize: 14, color: t.ink, lineHeight: 1.4 }}>{feat}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 4 }}>5. One last thing — optional but really useful.</label>
-            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 14, fontStyle: "italic" }}>Takes 10 seconds. Helps us show others what this is actually like.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.inkMid, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Before this session I felt…</label>
-                <input
-                  type="text"
-                  onChange={e => setFeedbackText(prev => ({ ...prev, q5before: e.target.value }))}
-                  placeholder="e.g. unprepared, nervous, unsure where to start…"
-                  style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, outline: "none", fontFamily: "'Inter', sans-serif" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: t.inkMid, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Now I feel…</label>
-                <input
-                  type="text"
-                  onChange={e => setFeedbackText(prev => ({ ...prev, q5after: e.target.value }))}
-                  placeholder="e.g. more confident, ready, clearer on what to say…"
-                  style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, outline: "none", fontFamily: "'Inter', sans-serif" }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: t.ink, marginBottom: 4 }}>
-              Stay in the loop <span style={{ color: t.inkLight, fontWeight: 400 }}>(optional)</span>
-            </label>
-            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 10, fontStyle: "italic", lineHeight: 1.5 }}>
-              Drop your email if you'd like to hear when new features land — voice mode, session history, and more are on the way. No spam, just updates when something worth sharing is ready.
-            </p>
-            <input
-              type="email"
-              value={feedbackText.email || ""}
-              onChange={e => setFeedbackText(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="your@email.com"
-              style={{
-                width: "100%", background: t.surface,
-                border: `1.5px solid ${feedbackText.email ? t.ink : t.border}`,
-                borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14,
-                outline: "none", transition: "border-color 0.2s", fontFamily: "'Inter', sans-serif",
-              }}
-            />
-          </div>
-
-          <Btn onClick={async () => {
-            try {
-              const body = new URLSearchParams({
-                "form-name": "beta-feedback",
-                "q1-hardest-question": feedbackText.q1 || "",
-                "q2-coaching-relevant": feedbackText.q2 || "",
-                "q2-detail": feedbackText.q2detail || "",
-                "q3-missing-questions": feedbackText.q3 || "",
-                "q4-features": (feedbackText.q4 || []).join(", "),
-                "q5-before": feedbackText.q5before || "",
-                "q5-after": feedbackText.q5after || "",
-                "email": feedbackText.email || "",
-              });
-              await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
-            } catch (e) { console.error("Feedback submit error", e); }
-            setFeedbackSent(true);
-          }} variant="pop">
-            Send feedback →
-          </Btn>
-          <p style={{ fontSize: 11, color: t.inkLight, marginTop: 12, fontStyle: "italic", lineHeight: 1.5 }}>
-            Your answers are used only to generate your coaching and cheat sheet. Your session is saved to your account automatically.
-          </p>
-        </div>
-      ) : (
-        <div className="fade-in" style={{ textAlign: "center", padding: "40px 0" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-            <Icon name="check" size={40} colour={t.accentGreen} />
-          </div>
-          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, marginBottom: 8 }}>Thank you — genuinely.</h3>
-          <p style={{ color: t.inkMid, fontSize: 15, fontStyle: "italic" }}>
-            This feedback goes straight into making the product better. Good luck with your interview.
-          </p>
-        </div>
-      )}
-
       {/* What would you like to do next? */}
       <div style={{ borderTop: `1px solid ${t.border}`, marginTop: 32, paddingTop: 24 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 14 }}>What would you like to do next?</p>
@@ -2443,7 +2286,6 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
     </div>
   );
 }
-
 // ── Credits Step ────────────────────────────────────────────────────
 // Shown after auth -- displays credits remaining, routes to paywall if 0
 function CreditsStep({ onContinue, onBuyCredits }) {
@@ -2524,8 +2366,7 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
   const [outcomeSaved, setOutcomeSaved] = useState({});
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState({ background: userProfile?.background || "", worry: userProfile?.worry || "" });
-  const [savingProfile, setSavingProfile] = useState(false);
-  useScrollToTop("history");
+  const [copyToast, setCopyToast] = useState(false);
 
   useEffect(() => {
     Promise.all([getUserSessions(), getCredits()]).then(([sess, cred]) => {
@@ -2750,10 +2591,14 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
           </div>
           <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Know someone job hunting? Send them the link.</p>
           <button
-            onClick={() => { navigator.clipboard.writeText("https://coach.aievolvingyou.com"); }}
-            style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "8px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, marginTop: "auto" }}
+            onClick={() => {
+              navigator.clipboard.writeText("https://coach.aievolvingyou.com");
+              setCopyToast(true);
+              setTimeout(() => setCopyToast(false), 2500);
+            }}
+            style={{ background: copyToast ? t.accentGreen : "none", color: copyToast ? "#fff" : t.inkMid, border: `1px solid ${copyToast ? t.accentGreen : t.border}`, borderRadius: 7, padding: "8px 14px", fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, marginTop: "auto", transition: "all 0.2s" }}
           >
-            Copy link
+            {copyToast ? "Copied!" : "Copy link"}
           </button>
         </div>
         <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2762,11 +2607,18 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
             <span style={{ fontSize: 13, fontWeight: 600, color: t.ink }}>Buy a gift session</span>
           </div>
           <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Give someone a coaching session as a gift.</p>
-          <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" style={{ textDecoration: "none", marginTop: "auto" }}>
-            <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "8px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
-              Buy a gift →
-            </button>
-          </a>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
+            <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" style={{ textDecoration: "none" }}>
+              <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                Single session £5
+              </button>
+            </a>
+            <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" style={{ textDecoration: "none" }}>
+              <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                Bundle 3 sessions £12
+              </button>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -2832,9 +2684,12 @@ useEffect(() => {
         sessionStorage.setItem("aey_user", JSON.stringify(data.user));
         setAuthed(true);
         // Load profile silently
-        getProfile().then(profile => setUserProfile(profile));
-        window.history.replaceState(null, "", window.location.pathname);
-        setStep(authDestination === "dashboard" ? 7 : 2);
+        getProfile().then(profile => {
+          setUserProfile(profile);
+          window.history.replaceState(null, "", window.location.pathname);
+          const dest = authDestination === "dashboard" ? 7 : (profile?.background ? 2 : 3);
+          setStep(dest);
+        });
       }
     })
     .catch(e => console.error("Token catch error:", e));
@@ -2866,8 +2721,8 @@ useEffect(() => {
   sessionStorage.removeItem("aey_stripe_source");
 
   if (stripeSource === "dashboard" && currentAccessToken) {
-    // Dashboard top-up -- add credits and go straight back to history
-    addCreditsAfterPayment(tier || "single");
+    // Dashboard top-up -- await credit add so dashboard loads with correct count
+    await addCreditsAfterPayment(tier || "single");
     setStep(7);
     return;
   }
@@ -2876,8 +2731,8 @@ useEffect(() => {
   const savedSessionId = sessionStorage.getItem("aey_session_id");
 
   if (savedSessionId && currentAccessToken) {
-    // We have a session to restore
-    addCreditsAfterPayment(tier || "single");
+    // Await credit add before restoring session
+    await addCreditsAfterPayment(tier || "single");
     restoreSessionState(savedSessionId).then(session => {
       if (session) {
         setCategory(session.role_family || null);
@@ -2887,18 +2742,15 @@ useEffect(() => {
         setUserInfo(session.user_info || null);
         setRestoredSession(session);
         sessionStorage.removeItem("aey_session_id");
-        setStep(5); // Coaching step is now step 5
+        setStep(5);
       } else {
-        // Session restore failed -- send to auth
         setStep(1);
       }
     });
   } else if (currentAccessToken) {
-    // Logged in but no saved session -- just mark paid and go to credits check
-    addCreditsAfterPayment(tier || "single");
+    await addCreditsAfterPayment(tier || "single");
     setStep(2);
   } else {
-    // Not logged in -- send to magic link
     setStep(1);
   }
 }, []);
@@ -2948,8 +2800,13 @@ useEffect(() => {
               onAuth={(user, token) => {
                 currentUser = user; currentAccessToken = token; setAuthed(true);
                 // Load profile silently after auth
-                getProfile().then(profile => setUserProfile(profile));
-                setStep(authDestination === "dashboard" ? 7 : 2);
+                getProfile().then(profile => {
+                  setUserProfile(profile);
+                  // New user (no profile) goes straight to category
+                  // Returning user goes to credits check → dashboard
+                  const dest = authDestination === "dashboard" ? 7 : (profile?.background ? 2 : 3);
+                  setStep(dest);
+                });
               }}
             />
           )}
