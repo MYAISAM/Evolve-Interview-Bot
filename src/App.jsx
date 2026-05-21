@@ -2364,8 +2364,6 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           </p>
         </div>
       )}
-        </div>
-      )}
 
       {/* Session done -- nav buttons */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
