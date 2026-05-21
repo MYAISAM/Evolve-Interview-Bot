@@ -975,6 +975,8 @@ function AuthStep({ onAuth, mode = "create" }) {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "Failed to send link");
+      // Persist destination so it survives the magic link redirect
+      sessionStorage.setItem("aey_auth_dest", mode === "signin" ? "dashboard" : "session");
       setSent(true);
     } catch (err) { setError(err.message); }
     setLoading(false);
@@ -2687,7 +2689,10 @@ useEffect(() => {
         getProfile().then(profile => {
           setUserProfile(profile);
           window.history.replaceState(null, "", window.location.pathname);
-          const dest = authDestination === "dashboard" ? 7 : (profile?.background ? 2 : 3);
+          // Read persisted destination (survives magic link redirect)
+          const savedDest = sessionStorage.getItem("aey_auth_dest") || "session";
+          sessionStorage.removeItem("aey_auth_dest");
+          const dest = savedDest === "dashboard" ? 7 : (profile?.background ? 2 : 3);
           setStep(dest);
         });
       }
