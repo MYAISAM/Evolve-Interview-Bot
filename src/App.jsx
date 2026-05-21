@@ -2716,24 +2716,22 @@ useEffect(() => {
     setAuthed(true);
   }
 
-  // Check if this payment came from the dashboard top-up vs mid-session paywall
   const stripeSource = sessionStorage.getItem("aey_stripe_source");
   sessionStorage.removeItem("aey_stripe_source");
 
-  if (stripeSource === "dashboard" && currentAccessToken) {
-    // Dashboard top-up -- await credit add so dashboard loads with correct count
-    await addCreditsAfterPayment(tier || "single");
-    setStep(7);
-    return;
-  }
+  // Inner async function so we can await credit writes before navigating
+  async function handleReturn() {
+    if (stripeSource === "dashboard" && currentAccessToken) {
+      await addCreditsAfterPayment(tier || "single");
+      setStep(7);
+      return;
+    }
 
-  // Mid-session paywall return -- try to restore session
-  const savedSessionId = sessionStorage.getItem("aey_session_id");
+    const savedSessionId = sessionStorage.getItem("aey_session_id");
 
-  if (savedSessionId && currentAccessToken) {
-    // Await credit add before restoring session
-    await addCreditsAfterPayment(tier || "single");
-    restoreSessionState(savedSessionId).then(session => {
+    if (savedSessionId && currentAccessToken) {
+      await addCreditsAfterPayment(tier || "single");
+      const session = await restoreSessionState(savedSessionId);
       if (session) {
         setCategory(session.role_family || null);
         setRoleFamily(session.role_family || null);
@@ -2746,13 +2744,15 @@ useEffect(() => {
       } else {
         setStep(1);
       }
-    });
-  } else if (currentAccessToken) {
-    await addCreditsAfterPayment(tier || "single");
-    setStep(2);
-  } else {
-    setStep(1);
+    } else if (currentAccessToken) {
+      await addCreditsAfterPayment(tier || "single");
+      setStep(2);
+    } else {
+      setStep(1);
+    }
   }
+
+  handleReturn();
 }, []);
 
   function reset() {
