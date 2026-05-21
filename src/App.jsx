@@ -2429,12 +2429,16 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
         </div>
       )}
 
-      {/* Session done -- nav buttons */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
-        <Btn onClick={onRestart}>Start a new session →</Btn>
-        {currentUser && (
-          <Btn variant="outline" onClick={onViewHistory}>View past sessions</Btn>
-        )}
+      {/* What would you like to do next? */}
+      <div style={{ borderTop: `1px solid ${t.border}`, marginTop: 32, paddingTop: 24 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 14 }}>What would you like to do next?</p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {currentUser && (
+            <Btn onClick={onViewHistory}>Go to my sessions →</Btn>
+          )}
+          <Btn variant="outline" onClick={onRestart}>Start a new session</Btn>
+        </div>
+        <p style={{ fontSize: 11, color: t.inkLight, marginTop: 10, fontStyle: "italic" }}>Your cheat sheet is saved. Come back any time.</p>
       </div>
     </div>
   );
@@ -2487,14 +2491,14 @@ function CreditsStep({ onContinue, onBuyCredits }) {
         You've used all your sessions. Top up to keep practising — your session history and cheat sheets are all saved.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <a href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01" style={{ textDecoration: "none" }}>
+        <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" onClick={() => sessionStorage.setItem("aey_stripe_source", "dashboard")} style={{ textDecoration: "none" }}>
           <div style={{ background: t.accentGreen, color: "#fff", borderRadius: 10, padding: "18px 22px", cursor: "pointer" }}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }}>Single session</div>
             <div style={{ fontSize: 14, opacity: 0.85 }}>One full coaching session + cheat sheet</div>
             <div style={{ fontWeight: 700, fontSize: 22, marginTop: 8 }}>£5</div>
           </div>
         </a>
-        <a href="https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02" style={{ textDecoration: "none" }}>
+        <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" onClick={() => sessionStorage.setItem("aey_stripe_source", "dashboard")} style={{ textDecoration: "none" }}>
           <div style={{ background: "#fff", color: t.ink, borderRadius: 10, padding: "18px 22px", cursor: "pointer", border: `2px solid ${t.accentPop}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
               <span style={{ fontWeight: 700, fontSize: 16 }}>3-session bundle</span>
@@ -2578,192 +2582,132 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
   }
 
   const credits = creditsData ? creditsData.credits_remaining : 0;
+  const mostRecentSessionId = sessions.length > 0 ? sessions[0].id : null;
+
+  const SectionDivider = () => (
+    <div style={{ borderTop: `1px solid ${t.border}`, margin: "24px 0" }} />
+  );
 
   return (
     <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px 60px" }}>
-      <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-          <Icon name="book" size={36} colour={t.accentGreen} />
-        </div>
-        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, marginBottom: 6 }}>Your sessions</h2>
-        <p style={{ color: t.inkMid, fontSize: 15, fontStyle: "italic" }}>Everything you've prepared — tap any session to view your cheat sheet.</p>
+
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, marginBottom: 4 }}>Your sessions</h2>
+        <p style={{ color: t.inkMid, fontSize: 14, fontStyle: "italic" }}>Everything you've prepared — tap any session to view your cheat sheet.</p>
       </div>
 
-      {/* Profile section */}
-      <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: editingProfile ? 16 : 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Icon name="sparkle" size={16} colour={t.accentGreen} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>Your coaching profile</span>
-          </div>
-          {!editingProfile && (
-            <button
-              onClick={() => { setProfileDraft({ background: userProfile?.background || "", worry: userProfile?.worry || "" }); setEditingProfile(true); }}
-              style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "5px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-            >
-              {userProfile?.background ? "Edit" : "Set up"}
-            </button>
+      {/* ── Coaching profile ── */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: t.inkMid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Your coaching profile</p>
+      <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          {!editingProfile ? (
+            <>
+              <div style={{ flex: 1 }}>
+                {userProfile?.background ? (
+                  <>
+                    <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, marginBottom: userProfile.worry ? 5 : 0 }}>{userProfile.background}</p>
+                    {userProfile.worry && <p style={{ fontSize: 12, color: t.inkLight, fontStyle: "italic" }}>Worry: {userProfile.worry}</p>}
+                  </>
+                ) : (
+                  <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Not set up yet. Your background and interview worry personalise every session.</p>
+                )}
+              </div>
+              <button onClick={() => { setProfileDraft({ background: userProfile?.background || "", worry: userProfile?.worry || "" }); setEditingProfile(true); }} style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "5px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, flexShrink: 0 }}>
+                {userProfile?.background ? "Edit" : "Set up"}
+              </button>
+            </>
+          ) : (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Your background</label>
+                <textarea value={profileDraft.background} onChange={e => setProfileDraft(d => ({ ...d, background: e.target.value }))} rows={3} placeholder="Current or most recent role — 1 to 2 sentences..." style={{ width: "100%", background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, lineHeight: 1.6, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }} />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Biggest interview worry <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span></label>
+                <textarea value={profileDraft.worry} onChange={e => setProfileDraft(d => ({ ...d, worry: e.target.value }))} rows={2} placeholder="e.g. I haven't interviewed in 5 years..." style={{ width: "100%", background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, lineHeight: 1.6, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }} />
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <Btn disabled={savingProfile || profileDraft.background.length < 20} onClick={async () => { setSavingProfile(true); await saveProfile(profileDraft.background, profileDraft.worry); onProfileSaved({ background: profileDraft.background, worry: profileDraft.worry }); setEditingProfile(false); setSavingProfile(false); }}>{savingProfile ? "Saving..." : "Save profile"}</Btn>
+                <Btn variant="outline" onClick={() => setEditingProfile(false)}>Cancel</Btn>
+              </div>
+            </div>
           )}
         </div>
-        {!editingProfile ? (
-          userProfile?.background ? (
-            <div style={{ marginTop: 10 }}>
-              <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, marginBottom: userProfile.worry ? 6 : 0 }}>{userProfile.background}</p>
-              {userProfile.worry && (
-                <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic", lineHeight: 1.5 }}>Worry: {userProfile.worry}</p>
-              )}
-            </div>
-          ) : (
-            <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic", marginTop: 8 }}>
-              Not set up yet. Your background and interview worry are used to personalise every session.
-            </p>
-          )
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Your background</label>
-              <textarea
-                value={profileDraft.background}
-                onChange={e => setProfileDraft(d => ({ ...d, background: e.target.value }))}
-                rows={3}
-                placeholder="Current or most recent role — 1 to 2 sentences..."
-                style={{ width: "100%", background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, lineHeight: 1.6, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }}
-              />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Biggest interview worry <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span></label>
-              <textarea
-                value={profileDraft.worry}
-                onChange={e => setProfileDraft(d => ({ ...d, worry: e.target.value }))}
-                rows={2}
-                placeholder="e.g. I haven't interviewed in 5 years..."
-                style={{ width: "100%", background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, lineHeight: 1.6, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Btn
-                disabled={savingProfile || profileDraft.background.length < 20}
-                onClick={async () => {
-                  setSavingProfile(true);
-                  await saveProfile(profileDraft.background, profileDraft.worry);
-                  onProfileSaved({ background: profileDraft.background, worry: profileDraft.worry });
-                  setEditingProfile(false);
-                  setSavingProfile(false);
-                }}
-              >
-                {savingProfile ? "Saving..." : "Save profile"}
-              </Btn>
-              <Btn variant="outline" onClick={() => setEditingProfile(false)}>Cancel</Btn>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Credits banner */}
-      <div style={{ background: credits > 0 ? "#f0f9f0" : "#fff8f6", border: `1.5px solid ${credits > 0 ? t.accentGreen : t.accentPop}40`, borderRadius: 10, padding: "14px 20px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <SectionDivider />
+
+      {/* ── Credits ── */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: t.inkMid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Credits</p>
+      <div style={{ background: credits > 0 ? "#f0f9f0" : "#fff8f6", border: `1.5px solid ${credits > 0 ? t.accentGreen : t.accentPop}40`, borderRadius: 10, padding: "14px 20px", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <p style={{ fontWeight: 600, fontSize: 14, color: t.ink, marginBottom: 2 }}>
-            {credits > 0 ? `${credits} credit${credits !== 1 ? "s" : ""} remaining` : "No credits remaining"}
-          </p>
-          <p style={{ fontSize: 12, color: t.inkMid }}>
-            {credits > 0 ? "Ready to start another session" : "Top up to continue practising"}
-          </p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: t.ink, marginBottom: 2 }}>{credits > 0 ? `${credits} credit${credits !== 1 ? "s" : ""} remaining` : "No credits remaining"}</p>
+          <p style={{ fontSize: 12, color: t.inkMid }}>{credits > 0 ? "Ready to start another session" : "Top up to continue practising"}</p>
         </div>
         {credits > 0 ? (
           <Btn onClick={onNewSession}>Start a new session →</Btn>
         ) : (
-          <a
-            href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01"
-            onClick={() => sessionStorage.setItem("aey_stripe_source", "dashboard")}
-            style={{ textDecoration: "none" }}
-          >
-            <Btn variant="pop">Buy credits →</Btn>
-          </a>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" onClick={() => sessionStorage.setItem("aey_stripe_source", "dashboard")} style={{ textDecoration: "none" }}>
+              <Btn variant="pop">Single session £5</Btn>
+            </a>
+            <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" onClick={() => sessionStorage.setItem("aey_stripe_source", "dashboard")} style={{ textDecoration: "none" }}>
+              <Btn>Bundle 3 sessions £12</Btn>
+            </a>
+          </div>
         )}
       </div>
 
+      <SectionDivider />
+
+      {/* ── Past sessions ── */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: t.inkMid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Past sessions</p>
+
       {sessions.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0" }}>
-          <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 24 }}>No completed sessions yet. Start your first one now.</p>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <p style={{ color: t.inkMid, fontSize: 14, marginBottom: 20 }}>No sessions yet. Start your first one.</p>
           <Btn onClick={onNewSession}>Start a session →</Btn>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {sessions.map((sess) => {
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {sessions.map((sess, idx) => {
             const saved = outcomeSaved[sess.id];
             const isEditing = outcomeForm && outcomeForm.sessionId === sess.id;
-            // Use locally saved version if available, otherwise use server data
-            const diaryData = saved || null;
             const displayOutcome = saved ? saved.outcome : sess.interview_outcome;
             const displayNotes = saved ? saved.notes : sess.interview_notes;
             const displayDate = saved ? saved.date : sess.interview_date;
+            const isNewest = sess.id === mostRecentSessionId;
             return (
-              <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
-                {/* Session card header -- tappable to view cheat sheet */}
-                <div
-                  onClick={() => setSelectedSession(sess)}
-                  className="hover-lift"
-                  style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}
-                >
+              <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: isNewest ? `3px solid ${t.accentGreen}` : `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
+                <div onClick={() => setSelectedSession(sess)} className="hover-lift" style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 600, fontSize: 15, color: t.ink }}>
-                        {sess.user_info?.role || sess.category_label || "Interview session"}
-                      </span>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>{sess.user_info?.role || sess.category_label || "Interview session"}</span>
                       {sess.completed && <Tag colour={t.tag} textColour={t.tagText}>Complete</Tag>}
                       {!sess.completed && <Tag colour={t.surfaceAlt} textColour={t.inkMid}>In progress</Tag>}
+                      {isNewest && <Tag colour="#fdf0e6" textColour={t.accentPop}>Just added</Tag>}
                     </div>
-                    <p style={{ fontSize: 12, color: t.inkLight }}>
+                    <p style={{ fontSize: 11, color: t.inkLight }}>
                       {sess.category_label && <span style={{ marginRight: 8 }}>{sess.category_label}</span>}
                       {formatDate(sess.created_at)}
                     </p>
                   </div>
-                  <Icon name="arrow" size={16} colour={t.inkLight} />
+                  <Icon name="arrow" size={15} colour={t.inkLight} />
                 </div>
 
-                {/* Interview diary -- outcome logging */}
-                <div style={{ borderTop: `1px solid ${t.border}`, padding: "12px 20px", background: t.bg }}>
+                <div style={{ borderTop: `1px solid ${t.border}`, padding: "10px 20px", background: t.bg }}>
                   {isEditing ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 4 }}>How did it go?</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: t.ink }}>How did it go?</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                         {OUTCOMES.map(o => (
-                          <button
-                            key={o.value}
-                            onClick={() => setOutcomeForm(f => ({ ...f, outcome: o.value }))}
-                            style={{ background: outcomeForm.outcome === o.value ? t.accentGreen : t.surface, color: outcomeForm.outcome === o.value ? "#fff" : t.ink, border: `1.5px solid ${outcomeForm.outcome === o.value ? t.accentGreen : t.border}`, borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-                          >
-                            {o.label}
-                          </button>
+                          <button key={o.value} onClick={() => setOutcomeForm(f => ({ ...f, outcome: o.value }))} style={{ background: outcomeForm.outcome === o.value ? t.accentGreen : t.surface, color: outcomeForm.outcome === o.value ? "#fff" : t.ink, border: `1.5px solid ${outcomeForm.outcome === o.value ? t.accentGreen : t.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>{o.label}</button>
                         ))}
                       </div>
-                      <input
-                        type="date"
-                        value={outcomeForm.date ? outcomeForm.date.substring(0, 10) : ""}
-                        onChange={e => setOutcomeForm(f => ({ ...f, date: e.target.value }))}
-                        style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif" }}
-                      />
-                      <textarea
-                        placeholder="Any notes? (optional)"
-                        value={outcomeForm.notes}
-                        onChange={e => setOutcomeForm(f => ({ ...f, notes: e.target.value }))}
-                        rows={2}
-                        style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }}
-                      />
+                      <input type="date" value={outcomeForm.date ? outcomeForm.date.substring(0, 10) : ""} onChange={e => setOutcomeForm(f => ({ ...f, date: e.target.value }))} style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "9px 14px", color: t.ink, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif" }} />
+                      <textarea placeholder="Any notes? (optional)" value={outcomeForm.notes} onChange={e => setOutcomeForm(f => ({ ...f, notes: e.target.value }))} rows={2} style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "9px 14px", color: t.ink, fontSize: 13, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }} />
                       <div style={{ display: "flex", gap: 10 }}>
-                        <Btn
-                          disabled={savingOutcome}
-                          onClick={async () => {
-                            setSavingOutcome(true);
-                            await updateSessionOutcome(outcomeForm.sessionId, outcomeForm.outcome, outcomeForm.notes, outcomeForm.date);
-                            // Store saved data locally so card shows it immediately
-                            setOutcomeSaved(prev => ({ ...prev, [outcomeForm.sessionId]: { outcome: outcomeForm.outcome, notes: outcomeForm.notes, date: outcomeForm.date } }));
-                            setOutcomeForm(null);
-                            setSavingOutcome(false);
-                          }}
-                        >
-                          {savingOutcome ? "Saving..." : "Save outcome"}
-                        </Btn>
+                        <Btn disabled={savingOutcome} onClick={async () => { setSavingOutcome(true); await updateSessionOutcome(outcomeForm.sessionId, outcomeForm.outcome, outcomeForm.notes, outcomeForm.date); setOutcomeSaved(prev => ({ ...prev, [outcomeForm.sessionId]: { outcome: outcomeForm.outcome, notes: outcomeForm.notes, date: outcomeForm.date } })); setOutcomeForm(null); setSavingOutcome(false); }}>{savingOutcome ? "Saving..." : "Save outcome"}</Btn>
                         <Btn variant="outline" onClick={() => setOutcomeForm(null)}>Cancel</Btn>
                       </div>
                     </div>
@@ -2772,22 +2716,17 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
                       <div style={{ flex: 1 }}>
                         {displayOutcome && displayOutcome !== "pending" ? (
                           <div>
-                            <p style={{ fontSize: 13, color: t.inkMid, marginBottom: displayNotes ? 4 : 0 }}>
+                            <p style={{ fontSize: 13, color: t.inkMid, marginBottom: displayNotes ? 3 : 0 }}>
                               <strong style={{ color: t.ink }}>{OUTCOMES.find(o => o.value === displayOutcome)?.label || displayOutcome}</strong>
                               {displayDate && <span style={{ color: t.inkLight }}> — {formatDate(displayDate)}</span>}
                             </p>
-                            {displayNotes && (
-                              <p style={{ fontSize: 12, color: t.inkLight, fontStyle: "italic", lineHeight: 1.5 }}>{displayNotes}</p>
-                            )}
+                            {displayNotes && <p style={{ fontSize: 12, color: t.inkLight, fontStyle: "italic" }}>{displayNotes}</p>}
                           </div>
                         ) : (
-                          <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Interview diary — log your outcome</p>
+                          <p style={{ fontSize: 12, color: t.inkLight, fontStyle: "italic" }}>Interview diary — log your outcome</p>
                         )}
                       </div>
-                      <button
-                        onClick={() => setOutcomeForm({ sessionId: sess.id, outcome: displayOutcome || "pending", notes: displayNotes || "", date: displayDate ? displayDate.substring(0, 10) : "" })}
-                        style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, flexShrink: 0 }}
-                      >
+                      <button onClick={() => setOutcomeForm({ sessionId: sess.id, outcome: displayOutcome || "pending", notes: displayNotes || "", date: displayDate ? displayDate.substring(0, 10) : "" })} style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "5px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, flexShrink: 0 }}>
                         {displayOutcome && displayOutcome !== "pending" ? "Edit" : "Log outcome"}
                       </button>
                     </div>
@@ -2798,6 +2737,48 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
           })}
         </div>
       )}
+
+      <SectionDivider />
+
+      {/* ── Share + Gift ── */}
+      <p style={{ fontSize: 11, fontWeight: 700, color: t.inkMid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Share</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
+        <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="share" size={18} colour={t.accentGreen} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: t.ink }}>Share with a friend</span>
+          </div>
+          <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Know someone job hunting? Send them the link.</p>
+          <button
+            onClick={() => { navigator.clipboard.writeText("https://coach.aievolvingyou.com"); }}
+            style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "8px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, marginTop: "auto" }}
+          >
+            Copy link
+          </button>
+        </div>
+        <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="gift" size={18} colour={t.accentPop} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: t.ink }}>Buy a gift session</span>
+          </div>
+          <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Give someone a coaching session as a gift.</p>
+          <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" style={{ textDecoration: "none", marginTop: "auto" }}>
+            <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "8px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+              Buy a gift →
+            </button>
+          </a>
+        </div>
+      </div>
+
+      <SectionDivider />
+
+      {/* ── Quiet feedback link ── */}
+      <div style={{ textAlign: "center", paddingBottom: 8 }}>
+        <a href="mailto:man@aievolvingyou.com?subject=App feedback" style={{ fontSize: 12, color: t.inkLight, textDecoration: "none", borderBottom: `1px solid ${t.border}`, paddingBottom: 1 }}>
+          Share feedback on the app
+        </a>
+      </div>
+
     </div>
   );
 }
