@@ -67,6 +67,43 @@ async function addCreditsAfterPayment(tier) {
   } catch (e) { console.error("Add credits error:", e); }
 }
 
+async function getCredits() {
+  if (!currentAccessToken || !currentUser) return null;
+  try {
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "getCredits", accessToken: currentAccessToken }),
+    });
+    const data = await res.json();
+    return data.success ? data.credits : null;
+  } catch (e) { console.error("Get credits error:", e); return null; }
+}
+
+async function getUserSessions() {
+  if (!currentAccessToken || !currentUser) return [];
+  try {
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "getSessionHistory", accessToken: currentAccessToken }),
+    });
+    const data = await res.json();
+    return data.success ? (data.sessions || []) : [];
+  } catch (e) { console.error("Get sessions error:", e); return []; }
+}
+
+async function updateSessionOutcome(sessionId, outcome, notes, interviewDate) {
+  if (!currentAccessToken || !sessionId) return;
+  try {
+    await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "updateInterviewOutcome", sessionId, outcome, notes, interviewDate: interviewDate || null, accessToken: currentAccessToken }),
+    });
+  } catch (e) { console.error("Update outcome error:", e); }
+}
+
 function generateToken() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
@@ -964,7 +1001,7 @@ function AuthStep({ onAuth }) {
 }
 
 // ── Landing ───────────────────────────────────────────────────────
-function Landing({ onStart }) {
+function Landing({ onStart, onSignIn }) {
   const gridRef = useRef(null);
   useEffect(() => {
     const handleScroll = () => {
@@ -1002,6 +1039,12 @@ function Landing({ onStart }) {
             ))}
           </div>
           <Btn onClick={onStart} style={{ padding: "15px 40px", fontSize: 16 }}>Start your session →</Btn>
+          <button
+            onClick={onSignIn}
+            style={{ background: "none", border: "none", color: t.inkMid, cursor: "pointer", fontSize: 14, fontFamily: "'Inter', sans-serif", fontWeight: 500, marginTop: 14, textDecoration: "underline", textUnderlineOffset: 3 }}
+          >
+            Already have an account? Sign in
+          </button>
 
 
         </div>
@@ -1571,7 +1614,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
       });
     }
 
-    if (isLastQuestion) { onFinish(newAnswers); }
+    if (isLastQuestion) { onFinish(newAnswers, sessionIdRef.current); }
     else { setCurrentQ(c => c + 1); setPhase("answering"); }
   }
 
@@ -1585,7 +1628,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
           completed: isLastQuestion,
         });
       }
-      if (isLastQuestion) { onFinish(pendingAnswers); }
+      if (isLastQuestion) { onFinish(pendingAnswers, sessionIdRef.current); }
       else { setCurrentQ(c => c + 1); setPhase("answering"); }
     }
   }, [paid]);
@@ -1876,7 +1919,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
     </div>
   );
 }
-function SummaryStep({ answers, userInfo, category, onRestart }) {
+function SummaryStep({ answers, userInfo, category, sessionId, onRestart, onViewHistory }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
   const [feedbackText, setFeedbackText] = useState({});
@@ -1992,7 +2035,12 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
         }),
       });
       const data = await res.json();
-      setCheatSheet(data.content[0].text);
+      const sheetText = data.content[0].text;
+      setCheatSheet(sheetText);
+      // Save cheat sheet to Supabase
+      if (sessionId) {
+        supabaseUpdate(sessionId, { cheat_sheet: sheetText, completed: true });
+      }
     } catch {
       setCheatSheet("Your strongest moments:\n• You showed up and practised — that already puts you ahead of most candidates\n• Your answers show real experience and self-awareness\n• You engaged honestly with the difficult questions\n\nWatch out for:\n• Keep answers to 60–90 seconds — less is more\n• Back every claim with a specific example\n\nWalk in with this:\nYou've done the work. Back yourself.");
     }
@@ -2316,6 +2364,295 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           </p>
         </div>
       )}
+        </div>
+      )}
+
+      {/* Session done -- nav buttons */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
+        <Btn onClick={onRestart}>Start a new session →</Btn>
+        {currentUser && (
+          <Btn variant="outline" onClick={onViewHistory}>View past sessions</Btn>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Credits Step ────────────────────────────────────────────────────
+// Shown after auth -- displays credits remaining, routes to paywall if 0
+function CreditsStep({ onContinue, onBuyCredits }) {
+  const [creditsData, setCreditsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useScrollToTop("credits");
+
+  useEffect(() => {
+    getCredits().then(data => {
+      setCreditsData(data);
+      setLoading(false);
+      // Auto-advance if credits > 0
+      if (data && data.credits_remaining > 0) {
+        onContinue();
+      }
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+        <ThinkingDots colour={t.accentGreen} />
+      </div>
+    );
+  }
+
+  const credits = creditsData ? creditsData.credits_remaining : 0;
+
+  if (credits > 0) {
+    // Will auto-advance -- show brief loading state
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+        <ThinkingDots colour={t.accentGreen} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="fade-up" style={{ maxWidth: 480, margin: "0 auto", padding: "60px 24px" }}>
+      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Credits</Tag></div>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, margin: "12px 0 8px" }}>
+        You're out of credits
+      </h2>
+      <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, marginBottom: 32, fontWeight: 300 }}>
+        You've used all your sessions. Top up to keep practising — your session history and cheat sheets are all saved.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <a href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01" style={{ textDecoration: "none" }}>
+          <div style={{ background: t.accentGreen, color: "#fff", borderRadius: 10, padding: "18px 22px", cursor: "pointer" }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }}>Single session</div>
+            <div style={{ fontSize: 14, opacity: 0.85 }}>One full coaching session + cheat sheet</div>
+            <div style={{ fontWeight: 700, fontSize: 22, marginTop: 8 }}>£5</div>
+          </div>
+        </a>
+        <a href="https://buy.stripe.com/9B63cvdjA6pM3IwgKN5Ne02" style={{ textDecoration: "none" }}>
+          <div style={{ background: "#fff", color: t.ink, borderRadius: 10, padding: "18px 22px", cursor: "pointer", border: `2px solid ${t.accentPop}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+              <span style={{ fontWeight: 700, fontSize: 16 }}>3-session bundle</span>
+              <Tag colour={t.accentPop} textColour="#fff">Best value</Tag>
+            </div>
+            <div style={{ fontSize: 14, color: t.inkMid }}>Three full sessions to use any time</div>
+            <div style={{ fontWeight: 700, fontSize: 22, marginTop: 8, color: t.accentPop }}>£12</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Session History Step ──────────────────────────────────────────
+function SessionHistoryStep({ onNewSession, onBack }) {
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [creditsData, setCreditsData] = useState(null);
+  const [outcomeForm, setOutcomeForm] = useState(null); // { sessionId, outcome, notes, date }
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const [outcomeSaved, setOutcomeSaved] = useState({});
+  useScrollToTop("history");
+
+  useEffect(() => {
+    Promise.all([getUserSessions(), getCredits()]).then(([sess, cred]) => {
+      setSessions(sess || []);
+      setCreditsData(cred);
+      setLoading(false);
+    });
+  }, []);
+
+  const OUTCOMES = [
+    { value: "pending", label: "Not happened yet" },
+    { value: "got_offer", label: "Got the offer" },
+    { value: "progressed", label: "Progressed to next round" },
+    { value: "no_offer", label: "Did not progress" },
+    { value: "withdrew", label: "I withdrew" },
+  ];
+
+  function formatDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: 660, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+        <ThinkingDots colour={t.accentGreen} />
+        <p style={{ marginTop: 12, color: t.inkLight, fontStyle: "italic", fontSize: 13 }}>Loading your sessions...</p>
+      </div>
+    );
+  }
+
+  // Full cheat sheet view for a past session
+  if (selectedSession) {
+    return (
+      <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px 60px" }}>
+        <button onClick={() => setSelectedSession(null)} style={{ background: "none", border: "none", color: t.inkMid, cursor: "pointer", fontSize: 13, fontWeight: 500, fontFamily: "'Inter', sans-serif", marginBottom: 24, display: "flex", alignItems: "center", gap: 6 }}>
+          <Icon name="arrowLeft" size={14} colour={t.inkMid} /> Back to sessions
+        </button>
+        <div style={{ marginBottom: 6 }}><Tag colour={t.tag} textColour={t.tagText}>{selectedSession.category_label || "Session"}</Tag></div>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 700, margin: "10px 0 4px" }}>Cheat sheet</h2>
+        <p style={{ color: t.inkLight, fontSize: 13, marginBottom: 24 }}>{formatDate(selectedSession.created_at)}</p>
+        {selectedSession.cheat_sheet ? (
+          <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
+            <RenderMarkdown text={selectedSession.cheat_sheet} />
+          </div>
+        ) : (
+          <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, color: t.inkMid, fontStyle: "italic" }}>
+            No cheat sheet saved for this session.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const credits = creditsData ? creditsData.credits_remaining : 0;
+
+  return (
+    <div className="fade-up" style={{ maxWidth: 660, margin: "0 auto", padding: "0 24px 60px" }}>
+      <div style={{ textAlign: "center", marginBottom: 36 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+          <Icon name="book" size={36} colour={t.accentGreen} />
+        </div>
+        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, marginBottom: 6 }}>Your sessions</h2>
+        <p style={{ color: t.inkMid, fontSize: 15, fontStyle: "italic" }}>Everything you've prepared — tap any session to view your cheat sheet.</p>
+      </div>
+
+      {/* Credits banner */}
+      <div style={{ background: credits > 0 ? "#f0f9f0" : "#fff8f6", border: `1.5px solid ${credits > 0 ? t.accentGreen : t.accentPop}40`, borderRadius: 10, padding: "14px 20px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <p style={{ fontWeight: 600, fontSize: 14, color: t.ink, marginBottom: 2 }}>
+            {credits > 0 ? `${credits} credit${credits !== 1 ? "s" : ""} remaining` : "No credits remaining"}
+          </p>
+          <p style={{ fontSize: 12, color: t.inkMid }}>
+            {credits > 0 ? "Ready to start another session" : "Top up to continue practising"}
+          </p>
+        </div>
+        {credits > 0 ? (
+          <Btn onClick={onNewSession}>Start a new session →</Btn>
+        ) : (
+          <a
+            href="https://buy.stripe.com/3cI28rcfw4hE7YMeCF5Ne01"
+            onClick={() => sessionStorage.setItem("aey_stripe_source", "dashboard")}
+            style={{ textDecoration: "none" }}
+          >
+            <Btn variant="pop">Buy credits →</Btn>
+          </a>
+        )}
+      </div>
+
+      {sessions.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 0" }}>
+          <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 24 }}>No completed sessions yet. Start your first one now.</p>
+          <Btn onClick={onNewSession}>Start a session →</Btn>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {sessions.map((sess) => {
+            const saved = outcomeSaved[sess.id];
+            const isEditing = outcomeForm && outcomeForm.sessionId === sess.id;
+            return (
+              <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
+                {/* Session card header -- tappable to view cheat sheet */}
+                <div
+                  onClick={() => setSelectedSession(sess)}
+                  className="hover-lift"
+                  style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 600, fontSize: 15, color: t.ink }}>{sess.category_label || "Interview session"}</span>
+                      {sess.completed && <Tag colour={t.tag} textColour={t.tagText}>Complete</Tag>}
+                      {!sess.completed && <Tag colour={t.surfaceAlt} textColour={t.inkMid}>In progress</Tag>}
+                    </div>
+                    <p style={{ fontSize: 12, color: t.inkLight }}>{formatDate(sess.created_at)}</p>
+                    {sess.user_info?.role && (
+                      <p style={{ fontSize: 13, color: t.inkMid, marginTop: 2 }}>{sess.user_info.role}</p>
+                    )}
+                  </div>
+                  <Icon name="arrow" size={16} colour={t.inkLight} />
+                </div>
+
+                {/* Interview diary -- outcome logging */}
+                <div style={{ borderTop: `1px solid ${t.border}`, padding: "12px 20px", background: t.bg }}>
+                  {!isEditing && !saved ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                      <div>
+                        {sess.interview_outcome && sess.interview_outcome !== "pending" ? (
+                          <p style={{ fontSize: 13, color: t.inkMid }}>
+                            Outcome: <strong style={{ color: t.ink }}>{OUTCOMES.find(o => o.value === sess.interview_outcome)?.label || sess.interview_outcome}</strong>
+                            {sess.interview_date && <span style={{ color: t.inkLight }}> — {formatDate(sess.interview_date)}</span>}
+                          </p>
+                        ) : (
+                          <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Interview diary — log your outcome</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setOutcomeForm({ sessionId: sess.id, outcome: sess.interview_outcome || "pending", notes: sess.interview_notes || "", date: sess.interview_date || "" })}
+                        style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
+                      >
+                        {sess.interview_outcome ? "Edit" : "Log outcome"}
+                      </button>
+                    </div>
+                  ) : saved ? (
+                    <p style={{ fontSize: 13, color: t.accentGreen, fontWeight: 500 }}>Outcome saved.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 4 }}>How did it go?</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {OUTCOMES.map(o => (
+                          <button
+                            key={o.value}
+                            onClick={() => setOutcomeForm(f => ({ ...f, outcome: o.value }))}
+                            style={{ background: outcomeForm.outcome === o.value ? t.accentGreen : t.surface, color: outcomeForm.outcome === o.value ? "#fff" : t.ink, border: `1.5px solid ${outcomeForm.outcome === o.value ? t.accentGreen : t.border}`, borderRadius: 6, padding: "7px 14px", fontSize: 13, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Interview date (e.g. 22 May 2026)"
+                        value={outcomeForm.date}
+                        onChange={e => setOutcomeForm(f => ({ ...f, date: e.target.value }))}
+                        style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif" }}
+                      />
+                      <textarea
+                        placeholder="Any notes? (optional)"
+                        value={outcomeForm.notes}
+                        onChange={e => setOutcomeForm(f => ({ ...f, notes: e.target.value }))}
+                        rows={2}
+                        style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }}
+                      />
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <Btn
+                          disabled={savingOutcome}
+                          onClick={async () => {
+                            setSavingOutcome(true);
+                            await updateSessionOutcome(outcomeForm.sessionId, outcomeForm.outcome, outcomeForm.notes, outcomeForm.date);
+                            setOutcomeSaved(prev => ({ ...prev, [outcomeForm.sessionId]: true }));
+                            setOutcomeForm(null);
+                            setSavingOutcome(false);
+                          }}
+                        >
+                          {savingOutcome ? "Saving..." : "Save outcome"}
+                        </Btn>
+                        <Btn variant="outline" onClick={() => setOutcomeForm(null)}>Cancel</Btn>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -2329,8 +2666,10 @@ export default function App() {
   const [jd, setJd] = useState("");
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
   const [authed, setAuthed] = useState(false);
   const [restoredSession, setRestoredSession] = useState(null);
+  const [authDestination, setAuthDestination] = useState("session"); // "session" | "dashboard"
 
   // Restore auth from sessionStorage on every load (survives Stripe redirect)
   useEffect(() => {
@@ -2365,7 +2704,7 @@ useEffect(() => {
         sessionStorage.setItem("aey_user", JSON.stringify(data.user));
         setAuthed(true);
         window.history.replaceState(null, "", window.location.pathname);
-        setStep(2);
+        setStep(authDestination === "dashboard" ? 7 : 2);
       }
     })
     .catch(e => console.error("Token catch error:", e));
@@ -2392,7 +2731,18 @@ useEffect(() => {
     setAuthed(true);
   }
 
-  // Try to restore session from sessionStorage
+  // Check if this payment came from the dashboard top-up vs mid-session paywall
+  const stripeSource = sessionStorage.getItem("aey_stripe_source");
+  sessionStorage.removeItem("aey_stripe_source");
+
+  if (stripeSource === "dashboard" && currentAccessToken) {
+    // Dashboard top-up -- add credits and go straight back to history
+    addCreditsAfterPayment(tier || "single");
+    setStep(7);
+    return;
+  }
+
+  // Mid-session paywall return -- try to restore session
   const savedSessionId = sessionStorage.getItem("aey_session_id");
 
   if (savedSessionId && currentAccessToken) {
@@ -2407,14 +2757,14 @@ useEffect(() => {
         setUserInfo(session.user_info || null);
         setRestoredSession(session);
         sessionStorage.removeItem("aey_session_id");
-        setStep(4);
+        setStep(5); // Coaching step is now step 5
       } else {
         // Session restore failed -- send to auth
         setStep(1);
       }
     });
   } else if (currentAccessToken) {
-    // Logged in but no saved session -- just mark paid and go to start
+    // Logged in but no saved session -- just mark paid and go to credits check
     addCreditsAfterPayment(tier || "single");
     setStep(2);
   } else {
@@ -2426,7 +2776,8 @@ useEffect(() => {
   function reset() {
     setStep(0); setCategory(null); setRoleFamily(null);
     setCareerStage(null); setJd(""); setUserInfo(null);
-    setSessionAnswers([]); setAuthed(false);
+    setSessionAnswers([]); setCurrentSessionId(null); setAuthed(false);
+    setAuthDestination("session");
     currentUser = null; currentAccessToken = null;
   }
 
@@ -2441,26 +2792,42 @@ useEffect(() => {
               <BetaBadge />
             </div>
             {step > 0 && (
-              <button onClick={reset} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
-                ← Start over
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                {authed && step !== 7 && (
+                  <button onClick={() => setStep(7)} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                    My sessions
+                  </button>
+                )}
+                <button onClick={reset} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                  ← Start over
+                </button>
+              </div>
             )}
           </div>
         </header>
         <main style={{ maxWidth: 720, margin: "0 auto", paddingTop: 40 }}>
-          {step === 0 && <Landing onStart={() => setStep(1)} />}
+          {step === 0 && <Landing onStart={() => setStep(1)} onSignIn={() => { setAuthDestination("dashboard"); setStep(1); }} />}
           {step === 1 && (
             <AuthStep
-              onAuth={(user, token) => { currentUser = user; currentAccessToken = token; setAuthed(true); setStep(2); }}
+              onAuth={(user, token) => {
+                currentUser = user; currentAccessToken = token; setAuthed(true);
+                setStep(authDestination === "dashboard" ? 7 : 2);
+              }}
             />
           )}
           {step === 2 && (
+            <CreditsStep
+              onContinue={() => setStep(3)}
+              onBuyCredits={() => { /* handled inside CreditsStep via Stripe links */ }}
+            />
+          )}
+          {step === 3 && (
             <CategoryStep onNext={({ category: c, roleFamily: rf, careerStage: cs, jd: j }) => {
-              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setJd(j); setStep(3);
+              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setJd(j); setStep(4);
             }} />
           )}
-          {step === 3 && <AboutStep onNext={info => { setUserInfo(info); setStep(4); }} />}
-          {step === 4 && (
+          {step === 4 && <AboutStep onNext={info => { setUserInfo(info); setStep(5); }} />}
+          {step === 5 && (
             <CoachingStep
               category={category}
               roleFamily={roleFamily}
@@ -2468,16 +2835,24 @@ useEffect(() => {
               jd={jd}
               userInfo={userInfo}
               restoredSession={restoredSession}
-              onFinish={ans => { setSessionAnswers(ans); setStep(5); }}
-              onBackToAbout={() => setStep(3)}
+              onFinish={(ans, sessId) => { setSessionAnswers(ans); setCurrentSessionId(sessId || null); setStep(6); }}
+              onBackToAbout={() => setStep(4)}
             />
           )}
-          {step === 5 && (
+          {step === 6 && (
             <SummaryStep
               answers={sessionAnswers}
               userInfo={userInfo}
               category={category}
+              sessionId={currentSessionId}
               onRestart={reset}
+              onViewHistory={() => setStep(7)}
+            />
+          )}
+          {step === 7 && (
+            <SessionHistoryStep
+              onNewSession={reset}
+              onBack={() => setStep(6)}
             />
           )}
         </main>
