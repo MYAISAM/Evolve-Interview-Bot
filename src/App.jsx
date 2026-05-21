@@ -104,6 +104,30 @@ async function updateSessionOutcome(sessionId, outcome, notes, interviewDate) {
   } catch (e) { console.error("Update outcome error:", e); }
 }
 
+async function getProfile() {
+  if (!currentAccessToken) return null;
+  try {
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "getProfile", accessToken: currentAccessToken }),
+    });
+    const data = await res.json();
+    return data.success ? data.profile : null;
+  } catch (e) { console.error("Get profile error:", e); return null; }
+}
+
+async function saveProfile(background, worry) {
+  if (!currentAccessToken) return;
+  try {
+    await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "saveProfile", background, worry, accessToken: currentAccessToken }),
+    });
+  } catch (e) { console.error("Save profile error:", e); }
+}
+
 function generateToken() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
@@ -934,7 +958,7 @@ function useScrollToTop(dep) {
 }
 
 // ── Auth Step ─────────────────────────────────────────────────────
-function AuthStep({ onAuth }) {
+function AuthStep({ onAuth, mode = "create" }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -976,10 +1000,15 @@ function AuthStep({ onAuth }) {
 
   return (
     <div className="fade-up" style={{ maxWidth: 480, margin: "0 auto", padding: "60px 24px" }}>
-      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Save your session</Tag></div>
-      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, margin: "12px 0 8px" }}>Create your free account</h2>
+      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>{mode === "signin" ? "Your account" : "Save your session"}</Tag></div>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 700, margin: "12px 0 8px" }}>
+        {mode === "signin" ? "Sign in to your account" : "Create your free account"}
+      </h2>
       <p style={{ color: t.inkMid, fontSize: 15, lineHeight: 1.65, marginBottom: 28, fontWeight: 300 }}>
-        No password needed. Just your email and we'll send you a link. Your sessions and cheat sheets are saved automatically so you can come back any time.
+        {mode === "signin"
+          ? "Enter your email and we'll send you a magic link. No password needed."
+          : "No password needed. Just your email and we'll send you a link. Your sessions and cheat sheets are saved automatically so you can come back any time."
+        }
       </p>
       <div style={{ marginBottom: 16 }}>
         <input
@@ -1039,12 +1068,6 @@ function Landing({ onStart, onSignIn }) {
             ))}
           </div>
           <Btn onClick={onStart} style={{ padding: "15px 40px", fontSize: 16 }}>Start your session →</Btn>
-          <button
-            onClick={onSignIn}
-            style={{ background: "none", border: "none", color: t.inkMid, cursor: "pointer", fontSize: 14, fontFamily: "'Inter', sans-serif", fontWeight: 500, marginTop: 14, textDecoration: "underline", textUnderlineOffset: 3 }}
-          >
-            Already have an account? Sign in
-          </button>
 
 
         </div>
@@ -1103,7 +1126,6 @@ function Landing({ onStart, onSignIn }) {
 function CategoryStep({ onNext }) {
   const [roleFamily, setRoleFamily] = useState(null);
   const [careerStage, setCareerStage] = useState(null);
-  const [jd, setJd] = useState("");
   useScrollToTop("category");
 
   const activeCategory = careerStage || roleFamily;
@@ -1113,7 +1135,7 @@ function CategoryStep({ onNext }) {
 
   return (
     <div className="fade-up" style={{ maxWidth: 680, margin: "0 auto", padding: "0 24px" }}>
-      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 1 of 3</Tag></div>
+      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 1 of 2</Tag></div>
       <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>Set up your session</h2>
       <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 32, fontWeight: 300 }}>Three quick steps — takes less than a minute.</p>
 
@@ -1175,37 +1197,9 @@ function CategoryStep({ onNext }) {
         </div>
       </div>
 
-      <div style={{ background: t.surface, border: `1.5px solid ${jd.length > 50 ? t.accentGreen : t.border}`, borderRadius: 12, padding: "20px 22px", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <div style={{ width: 24, height: 24, borderRadius: "50%", background: jd.length > 50 ? t.accentGreen : t.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {jd.length > 50 ? <Icon name="check" size={12} colour="#fff" /> : <span style={{ fontSize: 12, fontWeight: 700, color: t.inkMid }}>3</span>}
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: t.ink, textTransform: "uppercase", letterSpacing: "0.06em" }}>Paste the job description</span>
-          <span style={{ fontSize: 12, color: t.accentPop, fontWeight: 600 }}>Required</span>
-        </div>
-        <p style={{ fontSize: 12, color: t.inkMid, marginBottom: 12, fontStyle: "italic", marginLeft: 34, lineHeight: 1.5 }}>
-          Open the job posting, select all the text, copy and paste it here. The more detail you give us, the more specific your questions will be.
-        </p>
-        <textarea
-          value={jd} onChange={e => setJd(e.target.value)}
-          placeholder="Paste the full job description here…" rows={8}
-          style={{
-            width: "100%", background: t.bg,
-            border: `1.5px solid ${jd.length > 50 ? t.accentGreen : t.border}`,
-            borderRadius: 7, padding: "13px 15px", color: t.ink, fontSize: 14, lineHeight: 1.6,
-            outline: "none", transition: "border-color 0.2s",
-          }}
-        />
-        {jd.length > 50 && (
-          <p style={{ fontSize: 11, color: t.accentGreen, marginTop: 6, fontStyle: "italic" }}>
-            ✓ {jd.length} characters — looking good
-          </p>
-        )}
-      </div>
-
       <Btn
-        onClick={() => onNext({ category: activeCategory, roleFamily, careerStage, jd })}
-        disabled={!roleFamily || jd.length < 50}
+        onClick={() => onNext({ category: activeCategory, roleFamily, careerStage })}
+        disabled={!roleFamily}
       >
         Continue →
       </Btn>
@@ -1213,61 +1207,131 @@ function CategoryStep({ onNext }) {
       {!roleFamily && (
         <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>Pick a role family above to continue</p>
       )}
-      {roleFamily && jd.length < 50 && (
-        <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>Paste the job description to continue</p>
-      )}
     </div>
   );
 }
 
 // ── About You ─────────────────────────────────────────────────────
-function AboutStep({ onNext }) {
-  const [background, setBackground] = useState("");
+// ── Role Step (replaces AboutStep) ───────────────────────────────
+// For new users: JD + why + background + worry (all in one)
+// For returning users: JD + why only (profile pre-loaded)
+function RoleStep({ onNext, existingProfile, isReturning }) {
   const [why, setWhy] = useState("");
-  const [worry, setWorry] = useState("");
-  useScrollToTop("about");
+  const [jd, setJd] = useState("");
+  const [background, setBackground] = useState(existingProfile?.background || "");
+  const [worry, setWorry] = useState(existingProfile?.worry || "");
+  useScrollToTop("role");
+
+  const canContinue = why.length >= 20 && jd.length >= 40 && (isReturning || background.length >= 40);
 
   return (
-    <div className="fade-up" style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px" }}>
-      <div style={{ marginBottom: 8 }}><Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 2 of 3</Tag></div>
-      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>A bit about you</h2>
-      <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, fontWeight: 300 }}>Three quick questions so we can make this personal.</p>
-      {[
-        { label: "Your background", hint: "Current or most recent role — 1-2 sentences is fine", value: background, set: setBackground, rows: 3, required: true },
-        { label: "Why this role?", hint: "What draws you to it?", value: why, set: setWhy, rows: 3, required: true },
-        { label: "Biggest interview worry", hint: "Optional — helps us focus the coaching where it counts", value: worry, set: setWorry, rows: 2, required: false },
-      ].map((f, i) => (
-        <div key={i} style={{ marginBottom: 22 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-            {f.label} {!f.required && <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span>}
-          </label>
-          <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>{f.hint}</p>
-          <textarea
-            value={f.value} onChange={e => f.set(e.target.value)} rows={f.rows}
-            style={{
-              width: "100%", background: t.surface,
-              border: `1.5px solid ${f.value.length > 10 ? t.ink : t.border}`,
-              borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6,
-              outline: "none", transition: "border-color 0.2s",
-            }}
-          />
-          {f.required && f.value.length > 0 && f.value.length < 40 && (
-            <p style={{ fontSize: 11, color: t.accentPop, marginTop: 5, fontStyle: "italic" }}>
-              A little more detail helps us personalise your session
+    <div className="fade-up" style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px 60px" }}>
+      <div style={{ marginBottom: 8 }}>
+        <Tag colour={t.surfaceAlt} textColour={t.inkMid}>
+          {isReturning ? "New session" : "Step 2 of 2"}
+        </Tag>
+      </div>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>
+        {isReturning ? "What are we prepping for?" : "Tell us about the role"}
+      </h2>
+      <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 28, fontWeight: 300 }}>
+        {isReturning
+          ? "Your profile is saved. Just tell us about this specific role and we'll build your session around it."
+          : "This shapes every question and all the coaching you receive."
+        }
+      </p>
+
+      {/* JD paste -- always shown */}
+      <div style={{ marginBottom: 22 }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Paste the job description <span style={{ color: t.accentPop }}>*</span>
+        </label>
+        <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
+          The more of the JD you paste, the more tailored your questions will be.
+        </p>
+        <textarea
+          value={jd} onChange={e => setJd(e.target.value)} rows={6}
+          placeholder="Paste the full job description here..."
+          style={{ width: "100%", background: t.surface, border: `1.5px solid ${jd.length > 40 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s", resize: "vertical" }}
+        />
+      </div>
+
+      {/* Why this role -- always shown */}
+      <div style={{ marginBottom: 22 }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Why this role? <span style={{ color: t.accentPop }}>*</span>
+        </label>
+        <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
+          What draws you to it? Your answer shapes the motivation coaching.
+        </p>
+        <textarea
+          value={why} onChange={e => setWhy(e.target.value)} rows={3}
+          placeholder="What excites you about this role specifically..."
+          style={{ width: "100%", background: t.surface, border: `1.5px solid ${why.length > 20 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
+        />
+      </div>
+
+      {/* Background + worry -- only for new users */}
+      {!isReturning && (
+        <>
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Your background <span style={{ color: t.accentPop }}>*</span>
+            </label>
+            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
+              Current or most recent role — 1 to 2 sentences is fine. Saved to your profile.
             </p>
+            <textarea
+              value={background} onChange={e => setBackground(e.target.value)} rows={3}
+              placeholder="e.g. Senior Account Manager at a SaaS company, 6 years in B2B sales..."
+              style={{ width: "100%", background: t.surface, border: `1.5px solid ${background.length > 40 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
+            />
+          </div>
+          <div style={{ marginBottom: 28 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Biggest interview worry <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span>
+            </label>
+            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
+              Helps us focus the coaching where it counts. Saved to your profile.
+            </p>
+            <textarea
+              value={worry} onChange={e => setWorry(e.target.value)} rows={2}
+              placeholder="e.g. I haven't interviewed in 5 years, I struggle with salary questions..."
+              style={{ width: "100%", background: t.surface, border: `1.5px solid ${worry.length > 5 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
+            />
+          </div>
+        </>
+      )}
+
+      {/* For returning users show profile summary so they know what's loaded */}
+      {isReturning && existingProfile?.background && (
+        <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, padding: "14px 18px", marginBottom: 28 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Coaching from your profile</p>
+          <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, marginBottom: existingProfile.worry ? 8 : 0 }}>{existingProfile.background}</p>
+          {existingProfile.worry && (
+            <p style={{ fontSize: 13, color: t.inkMid, fontStyle: "italic", lineHeight: 1.5 }}>Worry: {existingProfile.worry}</p>
           )}
         </div>
-      ))}
-      <Btn onClick={() => onNext({ background, why, worry })} disabled={background.length < 40 || why.length < 40}>
+      )}
+
+      <Btn
+        onClick={() => onNext({ why, jd, background: isReturning ? (existingProfile?.background || "") : background, worry: isReturning ? (existingProfile?.worry || "") : worry })}
+        disabled={!canContinue}
+      >
         Generate my questions →
       </Btn>
-      {(background.length < 40 || why.length < 40) && (background.length > 0 || why.length > 0) && (
+      {!canContinue && (why.length > 0 || jd.length > 0) && (
         <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
-          Add a little more detail above to continue — the more you share, the better your coaching
+          {jd.length < 40 ? "Paste the job description to continue" : "Add a little more detail above to continue"}
         </p>
       )}
     </div>
   );
+}
+
+// ── (AboutStep kept as alias for backward compat -- not used in new flow) ──
+function AboutStep({ onNext }) {
+  return <RoleStep onNext={({ why, jd, background, worry }) => onNext({ background, why, worry })} existingProfile={null} isReturning={false} />;
 }
 
 // ── Coaching Session ──────────────────────────────────────────────
@@ -2387,7 +2451,7 @@ function CreditsStep({ onContinue, onBuyCredits }) {
     getCredits().then(data => {
       setCreditsData(data);
       setLoading(false);
-      // Auto-advance if credits > 0
+      // Auto-advance based on context -- if credits > 0, go to dashboard
       if (data && data.credits_remaining > 0) {
         onContinue();
       }
@@ -2446,7 +2510,7 @@ function CreditsStep({ onContinue, onBuyCredits }) {
 }
 
 // ── Session History Step ──────────────────────────────────────────
-function SessionHistoryStep({ onNewSession, onBack }) {
+function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
@@ -2454,6 +2518,9 @@ function SessionHistoryStep({ onNewSession, onBack }) {
   const [outcomeForm, setOutcomeForm] = useState(null); // { sessionId, outcome, notes, date }
   const [savingOutcome, setSavingOutcome] = useState(false);
   const [outcomeSaved, setOutcomeSaved] = useState({});
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState({ background: userProfile?.background || "", worry: userProfile?.worry || "" });
+  const [savingProfile, setSavingProfile] = useState(false);
   useScrollToTop("history");
 
   useEffect(() => {
@@ -2522,6 +2589,76 @@ function SessionHistoryStep({ onNewSession, onBack }) {
         <p style={{ color: t.inkMid, fontSize: 15, fontStyle: "italic" }}>Everything you've prepared — tap any session to view your cheat sheet.</p>
       </div>
 
+      {/* Profile section */}
+      <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: editingProfile ? 16 : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="sparkle" size={16} colour={t.accentGreen} />
+            <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>Your coaching profile</span>
+          </div>
+          {!editingProfile && (
+            <button
+              onClick={() => { setProfileDraft({ background: userProfile?.background || "", worry: userProfile?.worry || "" }); setEditingProfile(true); }}
+              style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "5px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
+            >
+              {userProfile?.background ? "Edit" : "Set up"}
+            </button>
+          )}
+        </div>
+        {!editingProfile ? (
+          userProfile?.background ? (
+            <div style={{ marginTop: 10 }}>
+              <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, marginBottom: userProfile.worry ? 6 : 0 }}>{userProfile.background}</p>
+              {userProfile.worry && (
+                <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic", lineHeight: 1.5 }}>Worry: {userProfile.worry}</p>
+              )}
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic", marginTop: 8 }}>
+              Not set up yet. Your background and interview worry are used to personalise every session.
+            </p>
+          )
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Your background</label>
+              <textarea
+                value={profileDraft.background}
+                onChange={e => setProfileDraft(d => ({ ...d, background: e.target.value }))}
+                rows={3}
+                placeholder="Current or most recent role — 1 to 2 sentences..."
+                style={{ width: "100%", background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, lineHeight: 1.6, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>Biggest interview worry <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span></label>
+              <textarea
+                value={profileDraft.worry}
+                onChange={e => setProfileDraft(d => ({ ...d, worry: e.target.value }))}
+                rows={2}
+                placeholder="e.g. I haven't interviewed in 5 years..."
+                style={{ width: "100%", background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, lineHeight: 1.6, outline: "none", resize: "none", fontFamily: "'Inter', sans-serif" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Btn
+                disabled={savingProfile || profileDraft.background.length < 20}
+                onClick={async () => {
+                  setSavingProfile(true);
+                  await saveProfile(profileDraft.background, profileDraft.worry);
+                  onProfileSaved({ background: profileDraft.background, worry: profileDraft.worry });
+                  setEditingProfile(false);
+                  setSavingProfile(false);
+                }}
+              >
+                {savingProfile ? "Saving..." : "Save profile"}
+              </Btn>
+              <Btn variant="outline" onClick={() => setEditingProfile(false)}>Cancel</Btn>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Credits banner */}
       <div style={{ background: credits > 0 ? "#f0f9f0" : "#fff8f6", border: `1.5px solid ${credits > 0 ? t.accentGreen : t.accentPop}40`, borderRadius: 10, padding: "14px 20px", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
@@ -2555,6 +2692,11 @@ function SessionHistoryStep({ onNewSession, onBack }) {
           {sessions.map((sess) => {
             const saved = outcomeSaved[sess.id];
             const isEditing = outcomeForm && outcomeForm.sessionId === sess.id;
+            // Use locally saved version if available, otherwise use server data
+            const diaryData = saved || null;
+            const displayOutcome = saved ? saved.outcome : sess.interview_outcome;
+            const displayNotes = saved ? saved.notes : sess.interview_notes;
+            const displayDate = saved ? saved.date : sess.interview_date;
             return (
               <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
                 {/* Session card header -- tappable to view cheat sheet */}
@@ -2565,42 +2707,23 @@ function SessionHistoryStep({ onNewSession, onBack }) {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 600, fontSize: 15, color: t.ink }}>{sess.category_label || "Interview session"}</span>
+                      <span style={{ fontWeight: 600, fontSize: 15, color: t.ink }}>
+                        {sess.user_info?.role || sess.category_label || "Interview session"}
+                      </span>
                       {sess.completed && <Tag colour={t.tag} textColour={t.tagText}>Complete</Tag>}
                       {!sess.completed && <Tag colour={t.surfaceAlt} textColour={t.inkMid}>In progress</Tag>}
                     </div>
-                    <p style={{ fontSize: 12, color: t.inkLight }}>{formatDate(sess.created_at)}</p>
-                    {sess.user_info?.role && (
-                      <p style={{ fontSize: 13, color: t.inkMid, marginTop: 2 }}>{sess.user_info.role}</p>
-                    )}
+                    <p style={{ fontSize: 12, color: t.inkLight }}>
+                      {sess.category_label && <span style={{ marginRight: 8 }}>{sess.category_label}</span>}
+                      {formatDate(sess.created_at)}
+                    </p>
                   </div>
                   <Icon name="arrow" size={16} colour={t.inkLight} />
                 </div>
 
                 {/* Interview diary -- outcome logging */}
                 <div style={{ borderTop: `1px solid ${t.border}`, padding: "12px 20px", background: t.bg }}>
-                  {!isEditing && !saved ? (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                      <div>
-                        {sess.interview_outcome && sess.interview_outcome !== "pending" ? (
-                          <p style={{ fontSize: 13, color: t.inkMid }}>
-                            Outcome: <strong style={{ color: t.ink }}>{OUTCOMES.find(o => o.value === sess.interview_outcome)?.label || sess.interview_outcome}</strong>
-                            {sess.interview_date && <span style={{ color: t.inkLight }}> — {formatDate(sess.interview_date)}</span>}
-                          </p>
-                        ) : (
-                          <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Interview diary — log your outcome</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setOutcomeForm({ sessionId: sess.id, outcome: sess.interview_outcome || "pending", notes: sess.interview_notes || "", date: sess.interview_date || "" })}
-                        style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-                      >
-                        {sess.interview_outcome ? "Edit" : "Log outcome"}
-                      </button>
-                    </div>
-                  ) : saved ? (
-                    <p style={{ fontSize: 13, color: t.accentGreen, fontWeight: 500 }}>Outcome saved.</p>
-                  ) : (
+                  {isEditing ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 4 }}>How did it go?</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -2615,9 +2738,8 @@ function SessionHistoryStep({ onNewSession, onBack }) {
                         ))}
                       </div>
                       <input
-                        type="text"
-                        placeholder="Interview date (e.g. 22 May 2026)"
-                        value={outcomeForm.date}
+                        type="date"
+                        value={outcomeForm.date ? outcomeForm.date.substring(0, 10) : ""}
                         onChange={e => setOutcomeForm(f => ({ ...f, date: e.target.value }))}
                         style={{ width: "100%", background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "10px 14px", color: t.ink, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif" }}
                       />
@@ -2634,7 +2756,8 @@ function SessionHistoryStep({ onNewSession, onBack }) {
                           onClick={async () => {
                             setSavingOutcome(true);
                             await updateSessionOutcome(outcomeForm.sessionId, outcomeForm.outcome, outcomeForm.notes, outcomeForm.date);
-                            setOutcomeSaved(prev => ({ ...prev, [outcomeForm.sessionId]: true }));
+                            // Store saved data locally so card shows it immediately
+                            setOutcomeSaved(prev => ({ ...prev, [outcomeForm.sessionId]: { outcome: outcomeForm.outcome, notes: outcomeForm.notes, date: outcomeForm.date } }));
                             setOutcomeForm(null);
                             setSavingOutcome(false);
                           }}
@@ -2643,6 +2766,30 @@ function SessionHistoryStep({ onNewSession, onBack }) {
                         </Btn>
                         <Btn variant="outline" onClick={() => setOutcomeForm(null)}>Cancel</Btn>
                       </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        {displayOutcome && displayOutcome !== "pending" ? (
+                          <div>
+                            <p style={{ fontSize: 13, color: t.inkMid, marginBottom: displayNotes ? 4 : 0 }}>
+                              <strong style={{ color: t.ink }}>{OUTCOMES.find(o => o.value === displayOutcome)?.label || displayOutcome}</strong>
+                              {displayDate && <span style={{ color: t.inkLight }}> — {formatDate(displayDate)}</span>}
+                            </p>
+                            {displayNotes && (
+                              <p style={{ fontSize: 12, color: t.inkLight, fontStyle: "italic", lineHeight: 1.5 }}>{displayNotes}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Interview diary — log your outcome</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setOutcomeForm({ sessionId: sess.id, outcome: displayOutcome || "pending", notes: displayNotes || "", date: displayDate ? displayDate.substring(0, 10) : "" })}
+                        style={{ background: "none", border: `1px solid ${t.border}`, borderRadius: 6, padding: "6px 12px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500, flexShrink: 0 }}
+                      >
+                        {displayOutcome && displayOutcome !== "pending" ? "Edit" : "Log outcome"}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -2668,6 +2815,7 @@ export default function App() {
   const [authed, setAuthed] = useState(false);
   const [restoredSession, setRestoredSession] = useState(null);
   const [authDestination, setAuthDestination] = useState("session"); // "session" | "dashboard"
+  const [userProfile, setUserProfile] = useState(null); // { background, worry } from profiles table
 
   // Restore auth from sessionStorage on every load (survives Stripe redirect)
   useEffect(() => {
@@ -2677,6 +2825,7 @@ export default function App() {
       currentAccessToken = savedToken;
       currentUser = JSON.parse(savedUser);
       setAuthed(true);
+      getProfile().then(profile => setUserProfile(profile));
     }
   }, []);
 
@@ -2701,6 +2850,8 @@ useEffect(() => {
         sessionStorage.setItem("aey_token", accessToken);
         sessionStorage.setItem("aey_user", JSON.stringify(data.user));
         setAuthed(true);
+        // Load profile silently
+        getProfile().then(profile => setUserProfile(profile));
         window.history.replaceState(null, "", window.location.pathname);
         setStep(authDestination === "dashboard" ? 7 : 2);
       }
@@ -2775,7 +2926,7 @@ useEffect(() => {
     setStep(0); setCategory(null); setRoleFamily(null);
     setCareerStage(null); setJd(""); setUserInfo(null);
     setSessionAnswers([]); setCurrentSessionId(null); setAuthed(false);
-    setAuthDestination("session");
+    setAuthDestination("session"); setUserProfile(null);
     currentUser = null; currentAccessToken = null;
   }
 
@@ -2789,42 +2940,66 @@ useEffect(() => {
               <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "-0.01em", color: "#3F6F63" }}>AI Evolving You</span>
               <BetaBadge />
             </div>
-            {step > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                {authed && step !== 7 && (
-                  <button onClick={() => setStep(7)} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
-                    My sessions
-                  </button>
-                )}
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              {step === 0 && (
+                <button onClick={() => { setAuthDestination("dashboard"); setStep(1); }} style={{ background: "none", border: "none", color: t.inkMid, cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                  Sign in
+                </button>
+              )}
+              {step > 0 && authed && step !== 7 && (
+                <button onClick={() => setStep(7)} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                  My sessions
+                </button>
+              )}
+              {step > 0 && (
                 <button onClick={reset} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
                   ← Start over
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </header>
         <main style={{ maxWidth: 720, margin: "0 auto", paddingTop: 40 }}>
           {step === 0 && <Landing onStart={() => setStep(1)} onSignIn={() => { setAuthDestination("dashboard"); setStep(1); }} />}
           {step === 1 && (
             <AuthStep
+              mode={authDestination === "dashboard" ? "signin" : "create"}
               onAuth={(user, token) => {
                 currentUser = user; currentAccessToken = token; setAuthed(true);
+                // Load profile silently after auth
+                getProfile().then(profile => setUserProfile(profile));
                 setStep(authDestination === "dashboard" ? 7 : 2);
               }}
             />
           )}
           {step === 2 && (
             <CreditsStep
-              onContinue={() => setStep(3)}
+              onContinue={() => setStep(7)}
               onBuyCredits={() => { /* handled inside CreditsStep via Stripe links */ }}
             />
           )}
           {step === 3 && (
-            <CategoryStep onNext={({ category: c, roleFamily: rf, careerStage: cs, jd: j }) => {
-              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setJd(j); setStep(4);
+            <CategoryStep onNext={({ category: c, roleFamily: rf, careerStage: cs }) => {
+              setCategory(c); setRoleFamily(rf); setCareerStage(cs); setStep(4);
             }} />
           )}
-          {step === 4 && <AboutStep onNext={info => { setUserInfo(info); setStep(5); }} />}
+          {step === 4 && (
+            <RoleStep
+              existingProfile={userProfile}
+              isReturning={!!(userProfile?.background)}
+              onNext={({ why, jd, background, worry }) => {
+                setJd(jd);
+                setUserInfo({ background, why, worry, role: "" });
+                // Save profile for new users (no existing background)
+                if (!userProfile?.background) {
+                  saveProfile(background, worry).then(() => {
+                    setUserProfile({ background, worry });
+                  });
+                }
+                setStep(5);
+              }}
+            />
+          )}
           {step === 5 && (
             <CoachingStep
               category={category}
@@ -2849,8 +3024,10 @@ useEffect(() => {
           )}
           {step === 7 && (
             <SessionHistoryStep
-              onNewSession={reset}
+              onNewSession={() => setStep(3)}
               onBack={() => setStep(6)}
+              userProfile={userProfile}
+              onProfileSaved={(updated) => setUserProfile(updated)}
             />
           )}
         </main>

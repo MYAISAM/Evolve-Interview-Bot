@@ -400,6 +400,43 @@ exports.handler = async (event) => {
       return ok({});
     }
 
+  // ── Get user profile ──────────────────────────────────────────
+  if (action === "getProfile") {
+    const { accessToken } = body;
+    const client = authClient(accessToken);
+    const { data: userData } = await client.auth.getUser();
+    if (!userData?.user) return err("Not authenticated", 401);
+
+    const { data, error } = await supabaseAdmin
+      .from("profiles")
+      .select("background, worry, display_name")
+      .eq("user_id", userData.user.id)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return ok({ profile: data || { background: null, worry: null, display_name: null } });
+  }
+
+  // ── Save user profile ─────────────────────────────────────────
+  if (action === "saveProfile") {
+    const { accessToken, background, worry } = body;
+    const client = authClient(accessToken);
+    const { data: userData } = await client.auth.getUser();
+    if (!userData?.user) return err("Not authenticated", 401);
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        background: background || null,
+        worry: worry || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userData.user.id);
+
+    if (error) throw error;
+    return ok({});
+  }
+
     return err("Unknown action", 400);
 
   } catch (e) {
