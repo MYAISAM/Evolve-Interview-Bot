@@ -68,12 +68,13 @@ async function addCreditsAfterPayment(tier) {
 }
 
 async function getCredits() {
-  if (!currentAccessToken || !currentUser) return null;
+  const token = currentAccessToken || sessionStorage.getItem("aey_token");
+  if (!token) return null;
   try {
     const res = await fetch(AUTH_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "getCredits", accessToken: currentAccessToken }),
+      body: JSON.stringify({ action: "getCredits", accessToken: token }),
     });
     const data = await res.json();
     return data.success ? data.credits : null;
@@ -81,12 +82,13 @@ async function getCredits() {
 }
 
 async function getUserSessions() {
-  if (!currentAccessToken || !currentUser) return [];
+  const token = currentAccessToken || sessionStorage.getItem("aey_token");
+  if (!token) return [];
   try {
     const res = await fetch(AUTH_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "getSessionHistory", accessToken: currentAccessToken }),
+      body: JSON.stringify({ action: "getSessionHistory", accessToken: token }),
     });
     const data = await res.json();
     return data.success ? (data.sessions || []) : [];
@@ -2380,21 +2382,14 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
 
   useEffect(() => {
     async function loadData() {
-      // If we just came back from Stripe, wait for the credit write to propagate
       const justAdded = sessionStorage.getItem("aey_credits_just_added");
       if (justAdded) {
         sessionStorage.removeItem("aey_credits_just_added");
         await new Promise(r => setTimeout(r, 1500));
-        const cred = await getCredits();
-        setCreditsData(cred);
-        if (onCreditsRefresh) onCreditsRefresh();
-      } else if (!initialCreditsData) {
-        // No credits passed -- fetch them
-        const cred = await getCredits();
-        setCreditsData(cred);
       }
-      const sess = await getUserSessions();
+      const [sess, cred] = await Promise.all([getUserSessions(), getCredits()]);
       setSessions(sess || []);
+      if (cred) setCreditsData(cred);
       setLoading(false);
     }
     loadData();
