@@ -2371,11 +2371,19 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
   const [copyToast, setCopyToast] = useState(false);
 
   useEffect(() => {
-    Promise.all([getUserSessions(), getCredits()]).then(([sess, cred]) => {
+    async function loadData() {
+      // If we just came back from Stripe, wait for the credit write to propagate
+      const justAdded = sessionStorage.getItem("aey_credits_just_added");
+      if (justAdded) {
+        sessionStorage.removeItem("aey_credits_just_added");
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      const [sess, cred] = await Promise.all([getUserSessions(), getCredits()]);
       setSessions(sess || []);
       setCreditsData(cred);
       setLoading(false);
-    });
+    }
+    loadData();
   }, []);
 
   const OUTCOMES = [
@@ -2728,6 +2736,7 @@ useEffect(() => {
   async function handleReturn() {
     if (stripeSource === "dashboard" && currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
+      sessionStorage.setItem("aey_credits_just_added", "true");
       setStep(7);
       return;
     }
@@ -2736,6 +2745,7 @@ useEffect(() => {
 
     if (savedSessionId && currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
+      sessionStorage.setItem("aey_credits_just_added", "true");
       const session = await restoreSessionState(savedSessionId);
       if (session) {
         setCategory(session.role_family || null);
@@ -2751,6 +2761,7 @@ useEffect(() => {
       }
     } else if (currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
+      sessionStorage.setItem("aey_credits_just_added", "true");
       setStep(2);
     } else {
       setStep(1);
