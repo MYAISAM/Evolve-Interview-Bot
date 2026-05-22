@@ -1134,7 +1134,7 @@ function CategoryStep({ onNext }) {
   const [careerStage, setCareerStage] = useState(null);
   useScrollToTop("category");
 
-  const activeCategory = careerStage || roleFamily;
+  const activeCategory = roleFamily || careerStage;
 
   const roleFamilies = ROLE_FAMILIES.map(key => ({ key, ...QUESTION_BANK[key] }));
   const careerStages = CAREER_STAGES.map(key => ({ key, ...QUESTION_BANK[key] }));
@@ -1222,19 +1222,19 @@ function CategoryStep({ onNext }) {
 // For new users: JD + why + background + worry (all in one)
 // For returning users: JD + why only (profile pre-loaded)
 function RoleStep({ onNext, existingProfile, isReturning }) {
+  const [jobTitle, setJobTitle] = useState("");
+  const [company, setCompany] = useState("");
   const [why, setWhy] = useState("");
   const [jd, setJd] = useState("");
-  const [background, setBackground] = useState(existingProfile?.background || "");
-  const [worry, setWorry] = useState(existingProfile?.worry || "");
   useScrollToTop("role");
 
-  const canContinue = why.length >= 20 && jd.length >= 40 && (isReturning || background.length >= 40);
+  const canContinue = jobTitle.trim().length >= 2 && why.length >= 20 && jd.length >= 40;
 
   return (
     <div className="fade-up" style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px 60px" }}>
       <div style={{ marginBottom: 8 }}>
         <Tag colour={t.surfaceAlt} textColour={t.inkMid}>
-          {isReturning ? "New session" : "Step 2 of 2"}
+          {isReturning ? "New session" : "Step 2 of 3"}
         </Tag>
       </div>
       <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>
@@ -1246,6 +1246,34 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
           : "This shapes every question and all the coaching you receive."
         }
       </p>
+
+      {/* Job title + company -- always shown */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 22 }}>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Job title <span style={{ color: t.accentPop }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={jobTitle}
+            onChange={e => setJobTitle(e.target.value)}
+            placeholder="e.g. Senior Product Manager"
+            style={{ width: "100%", background: t.surface, border: `1.5px solid ${jobTitle.length >= 2 ? t.ink : t.border}`, borderRadius: 8, padding: "11px 14px", color: t.ink, fontSize: 14, outline: "none", transition: "border-color 0.2s", fontFamily: "'Inter', sans-serif" }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Company <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={company}
+            onChange={e => setCompany(e.target.value)}
+            placeholder="e.g. Acme Corp"
+            style={{ width: "100%", background: t.surface, border: `1.5px solid ${company.length > 0 ? t.ink : t.border}`, borderRadius: 8, padding: "11px 14px", color: t.ink, fontSize: 14, outline: "none", transition: "border-color 0.2s", fontFamily: "'Inter', sans-serif" }}
+          />
+        </div>
+      </div>
 
       {/* JD paste -- always shown */}
       <div style={{ marginBottom: 22 }}>
@@ -1263,7 +1291,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
       </div>
 
       {/* Why this role -- always shown */}
-      <div style={{ marginBottom: 22 }}>
+      <div style={{ marginBottom: 28 }}>
         <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
           Why this role? <span style={{ color: t.accentPop }}>*</span>
         </label>
@@ -1277,39 +1305,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
         />
       </div>
 
-      {/* Background + worry -- only for new users */}
-      {!isReturning && (
-        <>
-          <div style={{ marginBottom: 22 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Your background <span style={{ color: t.accentPop }}>*</span>
-            </label>
-            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
-              Current or most recent role — 1 to 2 sentences. Saved to your profile for next time.
-            </p>
-            <textarea
-              value={background} onChange={e => setBackground(e.target.value)} rows={3}
-              placeholder="e.g. Senior Account Manager at a SaaS company, 6 years in B2B sales..."
-              style={{ width: "100%", background: t.surface, border: `1.5px solid ${background.length > 40 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
-            />
-          </div>
-          <div style={{ marginBottom: 28 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Biggest interview worry <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span>
-            </label>
-            <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
-              Helps us focus the coaching where it counts. Saved to your profile.
-            </p>
-            <textarea
-              value={worry} onChange={e => setWorry(e.target.value)} rows={2}
-              placeholder="e.g. I haven't interviewed in 5 years, I struggle with salary questions..."
-              style={{ width: "100%", background: t.surface, border: `1.5px solid ${worry.length > 5 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
-            />
-          </div>
-        </>
-      )}
-
-      {/* For returning users show profile summary so they know what's loaded */}
+      {/* For returning users show profile summary */}
       {isReturning && existingProfile?.background && (
         <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, padding: "14px 18px", marginBottom: 28 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Coaching from your profile</p>
@@ -1321,27 +1317,91 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
       )}
 
       <Btn
-        onClick={() => onNext({ why, jd, background: isReturning ? (existingProfile?.background || "") : background, worry: isReturning ? (existingProfile?.worry || "") : worry })}
+        onClick={() => onNext({ jobTitle: jobTitle.trim(), company: company.trim(), why, jd })}
         disabled={!canContinue}
       >
-        Generate my questions →
+        Continue →
       </Btn>
-      {!canContinue && (why.length > 0 || jd.length > 0) && (
+      {!canContinue && (jobTitle.length > 0 || jd.length > 0 || why.length > 0) && (
         <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
-          {jd.length < 40 ? "Paste the job description to continue" : "Add a little more detail above to continue"}
+          {jobTitle.trim().length < 2 ? "Add the job title to continue" : jd.length < 40 ? "Paste the job description to continue" : "Add a little more detail to continue"}
         </p>
       )}
     </div>
   );
 }
 
-// ── (AboutStep kept as alias for backward compat -- not used in new flow) ──
+// ── Profile Setup Step (new users only, step 4.5) ─────────────────
+function ProfileSetupStep({ onNext, onSkip }) {
+  const [background, setBackground] = useState("");
+  const [worry, setWorry] = useState("");
+  useScrollToTop("profile-setup");
+
+  return (
+    <div className="fade-up" style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px 60px" }}>
+      <div style={{ marginBottom: 8 }}>
+        <Tag colour={t.surfaceAlt} textColour={t.inkMid}>Step 3 of 3</Tag>
+      </div>
+      <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 30, fontWeight: 700, margin: "12px 0 6px" }}>
+        A bit about you
+      </h2>
+      <p style={{ color: t.inkMid, fontSize: 15, marginBottom: 6, fontWeight: 300 }}>
+        This personalises your coaching. Saved to your profile — you'll never fill this in again.
+      </p>
+      <p style={{ color: t.inkLight, fontSize: 13, marginBottom: 28, fontStyle: "italic" }}>
+        You can skip this and add it later from your dashboard.
+      </p>
+
+      <div style={{ marginBottom: 22 }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Your background <span style={{ color: t.accentPop }}>*</span>
+        </label>
+        <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
+          Current or most recent role — 1 to 2 sentences is fine.
+        </p>
+        <textarea
+          value={background} onChange={e => setBackground(e.target.value)} rows={3}
+          placeholder="e.g. Senior Account Manager at a SaaS company, 6 years in B2B sales..."
+          style={{ width: "100%", background: t.surface, border: `1.5px solid ${background.length > 40 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 32 }}>
+        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          Biggest interview worry <span style={{ color: t.inkLight, fontWeight: 400, textTransform: "none" }}>(optional)</span>
+        </label>
+        <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
+          Helps us focus the coaching where it counts.
+        </p>
+        <textarea
+          value={worry} onChange={e => setWorry(e.target.value)} rows={2}
+          placeholder="e.g. I haven't interviewed in 5 years..."
+          style={{ width: "100%", background: t.surface, border: `1.5px solid ${worry.length > 5 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
+        />
+      </div>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Btn onClick={() => onNext({ background, worry })} disabled={background.length < 40}>
+          Generate my questions →
+        </Btn>
+        <Btn variant="outline" onClick={onSkip}>Skip for now</Btn>
+      </div>
+      {background.length > 0 && background.length < 40 && (
+        <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
+          Add a little more detail to continue
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── (AboutStep kept as alias for backward compat) ──
 function AboutStep({ onNext }) {
-  return <RoleStep onNext={({ why, jd, background, worry }) => onNext({ background, why, worry })} existingProfile={null} isReturning={false} />;
+  return <RoleStep onNext={({ why, jd }) => onNext({ background: "", why, worry: "" })} existingProfile={null} isReturning={false} />;
 }
 
 // ── Coaching Session ──────────────────────────────────────────────
-function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restoredSession, onFinish, onBackToAbout, hasCredits }) {
+function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company, userInfo, restoredSession, onFinish, onBackToAbout, hasCredits }) {
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -1376,7 +1436,17 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
         sessionIdRef.current = s.id;
         setPaid(true); // They've returned from Stripe -- unlock the session
         setPhase("answering");
-        return; // Skip normal question generation
+        // Decrement credit for Stripe-purchased session
+        const token = currentAccessToken || sessionStorage.getItem("aey_token");
+        const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+        if (token && user) {
+          fetch(AUTH_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "decrementCredit", userId: user.id, sessionId: s.id, accessToken: token }),
+          }).catch(e => console.error("Decrement credit error:", e));
+        }
+        return;
       }
     }
   }, [restoredSession]);
@@ -1451,6 +1521,8 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
       role_family: roleFamily ? QUESTION_BANK[roleFamily]?.label : null,
       career_stage: careerStage ? QUESTION_BANK[careerStage]?.label : null,
       category_label: bank?.label || null,
+      job_title: jobTitle || null,
+      company: company || null,
       jd: jd || null,
       user_info: userInfo || null,
       questions_answered: 0,
@@ -2559,14 +2631,18 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
                 <div onClick={() => setSelectedSession(sess)} className="hover-lift" style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>{sess.user_info?.role || sess.category_label || "Interview session"}</span>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>
+                        {sess.job_title || sess.category_label || "Interview session"}
+                        {sess.career_stage && sess.career_stage !== sess.category_label && (
+                          <span style={{ fontWeight: 400, color: t.inkMid }}> · {sess.career_stage}</span>
+                        )}
+                      </span>
                       {sess.completed && <Tag colour={t.tag} textColour={t.tagText}>Complete</Tag>}
                       {!sess.completed && <Tag colour={t.surfaceAlt} textColour={t.inkMid}>In progress</Tag>}
                       {isNewest && <Tag colour="#fdf0e6" textColour={t.accentPop}>Just added</Tag>}
                     </div>
                     <p style={{ fontSize: 11, color: t.inkLight }}>
-                      {sess.category_label && <span style={{ marginRight: 8 }}>{sess.category_label}</span>}
-                      {formatDate(sess.created_at)}
+                      {sess.company ? `${sess.company} · ` : sess.category_label ? `${sess.category_label} · ` : ""}{formatDate(sess.created_at)}
                     </p>
                   </div>
                   <Icon name="arrow" size={15} colour={t.inkLight} />
@@ -2678,6 +2754,8 @@ export default function App() {
   const [roleFamily, setRoleFamily] = useState(null);
   const [careerStage, setCareerStage] = useState(null);
   const [jd, setJd] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [company, setCompany] = useState("");
   const [userInfo, setUserInfo] = useState(null);
   const [sessionAnswers, setSessionAnswers] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -2806,7 +2884,7 @@ useEffect(() => {
 
   function reset() {
     setStep(0); setCategory(null); setRoleFamily(null);
-    setCareerStage(null); setJd(""); setUserInfo(null);
+    setCareerStage(null); setJd(""); setJobTitle(""); setCompany(""); setUserInfo(null);
     setSessionAnswers([]); setCurrentSessionId(null); setAuthed(false);
     setAuthDestination("session"); setUserProfile(null);
     currentUser = null; currentAccessToken = null;
@@ -2874,17 +2952,34 @@ useEffect(() => {
             <RoleStep
               existingProfile={userProfile}
               isReturning={!!(userProfile?.background)}
-              onNext={({ why, jd, background, worry }) => {
-                setJd(jd);
-                setUserInfo({ background, why, worry, role: "" });
-                // Save profile for new users (no existing background)
-                if (!userProfile?.background) {
-                  saveProfile(background, worry).then(() => {
-                    setUserProfile({ background, worry });
-                  });
+              onNext={({ jobTitle: jt, company: co, why, jd: jdVal }) => {
+                setJobTitle(jt);
+                setCompany(co);
+                setJd(jdVal);
+                // For new users without a profile, go to profile setup (step 4.5 = step 45)
+                // For returning users, assemble userInfo and go to coaching
+                if (userProfile?.background) {
+                  setUserInfo({ background: userProfile.background, why, worry: userProfile.worry || "", role: jt });
+                  setStep(5);
+                } else {
+                  // Store why temporarily, go to profile setup
+                  setUserInfo({ background: "", why, worry: "", role: jt });
+                  setStep(45);
                 }
+              }}
+            />
+          )}
+          {step === 45 && (
+            <ProfileSetupStep
+              onNext={({ background, worry }) => {
+                const updated = { ...userInfo, background, worry };
+                setUserInfo(updated);
+                saveProfile(background, worry).then(() => {
+                  setUserProfile({ background, worry });
+                });
                 setStep(5);
               }}
+              onSkip={() => setStep(5)}
             />
           )}
           {step === 5 && (
@@ -2893,6 +2988,8 @@ useEffect(() => {
               roleFamily={roleFamily}
               careerStage={careerStage}
               jd={jd}
+              jobTitle={jobTitle}
+              company={company}
               userInfo={userInfo}
               restoredSession={restoredSession}
               hasCredits={!!(creditsData && creditsData.credits_remaining > 0)}
