@@ -57,12 +57,14 @@ async function restoreSessionState(sessionId) {
 }
 
 async function addCreditsAfterPayment(tier) {
-  if (!currentAccessToken || !currentUser) return;
+  const token = currentAccessToken || sessionStorage.getItem("aey_token");
+  const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+  if (!token || !user) return;
   try {
     await fetch(AUTH_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "addCredits", tier, userId: currentUser.id, accessToken: currentAccessToken }),
+      body: JSON.stringify({ action: "addCredits", tier, userId: user.id, accessToken: token }),
     });
   } catch (e) { console.error("Add credits error:", e); }
 }
@@ -2378,6 +2380,7 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
   const [outcomeSaved, setOutcomeSaved] = useState({});
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState({ background: userProfile?.background || "", worry: userProfile?.worry || "" });
+  const [savingProfile, setSavingProfile] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
 
   useEffect(() => {
