@@ -166,17 +166,22 @@ exports.handler = async (event) => {
       return ok({ session: data });
     }
 
-    // ── Get credits for current user ──────────────────────────────
-    if (action === "getCredits") {
-      const { accessToken } = body;
-      const client = authClient(accessToken);
-      const { data, error } = await client
-        .from("credits")
-        .select("credits_remaining, total_purchased, total_used")
-        .single();
-      if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
-      return ok({ credits: data || { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
-    }
+  // ── Get credits for current user ──────────────────────────────────────────
+if (action === "getCredits") {
+  const { accessToken } = body;
+  const client = authClient(accessToken);
+  const { data: userData } = await client.auth.getUser();
+  if (!userData?.user) return ok({ credits: { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
+
+  const { data, error } = await supabaseAdmin
+    .from("credits")
+    .select("credits_remaining, total_purchased, total_used")
+    .eq("user_id", userData.user.id)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return ok({ credits: data || { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
+}
 
     // ── Add credits after Stripe payment ─────────────────────────
     // Called when user returns from Stripe with paid=true
