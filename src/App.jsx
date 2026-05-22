@@ -1444,8 +1444,11 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
     const token = generateToken();
     const session = await supabaseInsert({
       session_token: token,
-      role_family: roleFamily ? QUESTION_BANK[roleFamily].label : null,
-      career_stage: careerStage ? QUESTION_BANK[careerStage].label : null,
+      role_family: roleFamily ? QUESTION_BANK[roleFamily]?.label : null,
+      career_stage: careerStage ? QUESTION_BANK[careerStage]?.label : null,
+      category_label: bank?.label || null,
+      jd: jd || null,
+      user_info: userInfo || null,
       questions_answered: 0,
       completed: false,
       paid: false,
@@ -2290,21 +2293,26 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
 }
 // ── Credits Step ────────────────────────────────────────────────────
 // Shown after auth -- displays credits remaining, routes to paywall if 0
-function CreditsStep({ onContinue, onBuyCredits }) {
-  const [creditsData, setCreditsData] = useState(null);
-  const [loading, setLoading] = useState(true);
+function CreditsStep({ onContinue, onBuyCredits, creditsData: initialCredits }) {
+  const [creditsData, setCreditsData] = useState(initialCredits || null);
+  const [loading, setLoading] = useState(!initialCredits);
   useScrollToTop("credits");
 
   useEffect(() => {
+    if (initialCredits) {
+      // Already have data from App shell -- use it directly
+      setCreditsData(initialCredits);
+      setLoading(false);
+      if (initialCredits.credits_remaining > 0) onContinue();
+      return;
+    }
+    // Fallback: fetch if not passed
     getCredits().then(data => {
       setCreditsData(data);
       setLoading(false);
-      // Auto-advance based on context -- if credits > 0, go to dashboard
-      if (data && data.credits_remaining > 0) {
-        onContinue();
-      }
+      if (data && data.credits_remaining > 0) onContinue();
     });
-  }, []);
+  }, [initialCredits]);
 
   if (loading) {
     return (
@@ -2358,11 +2366,11 @@ function CreditsStep({ onContinue, onBuyCredits }) {
 }
 
 // ── Session History Step ──────────────────────────────────────────
-function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved }) {
+function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved, initialCreditsData, onCreditsRefresh }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
-  const [creditsData, setCreditsData] = useState(null);
+  const [creditsData, setCreditsData] = useState(initialCreditsData || null);
   const [outcomeForm, setOutcomeForm] = useState(null); // { sessionId, outcome, notes, date }
   const [savingOutcome, setSavingOutcome] = useState(false);
   const [outcomeSaved, setOutcomeSaved] = useState({});
@@ -2377,10 +2385,16 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved 
       if (justAdded) {
         sessionStorage.removeItem("aey_credits_just_added");
         await new Promise(r => setTimeout(r, 1500));
+        const cred = await getCredits();
+        setCreditsData(cred);
+        if (onCreditsRefresh) onCreditsRefresh();
+      } else if (!initialCreditsData) {
+        // No credits passed -- fetch them
+        const cred = await getCredits();
+        setCreditsData(cred);
       }
-      const [sess, cred] = await Promise.all([getUserSessions(), getCredits()]);
+      const sess = await getUserSessions();
       setSessions(sess || []);
-      setCreditsData(cred);
       setLoading(false);
     }
     loadData();
@@ -2659,6 +2673,7 @@ export default function App() {
   const [restoredSession, setRestoredSession] = useState(null);
   const [authDestination, setAuthDestination] = useState("session"); // "session" | "dashboard"
   const [userProfile, setUserProfile] = useState(null); // { background, worry } from profiles table
+  const [creditsData, setCreditsData] = useState(null); // { credits_remaining, ... }
 
   // Restore auth from sessionStorage on every load (survives Stripe redirect)
   useEffect(() => {
@@ -2669,6 +2684,7 @@ export default function App() {
       currentUser = JSON.parse(savedUser);
       setAuthed(true);
       getProfile().then(profile => setUserProfile(profile));
+      getCredits().then(cred => setCreditsData(cred));
     }
   }, []);
 
@@ -2703,6 +2719,7 @@ useEffect(() => {
           const dest = savedDest === "dashboard" ? 7 : (profile?.background ? 2 : 3);
           setStep(dest);
         });
+        getCredits().then(cred => setCreditsData(cred));
       }
     })
     .catch(e => console.error("Token catch error:", e));
@@ -2736,7 +2753,8 @@ useEffect(() => {
   async function handleReturn() {
     if (stripeSource === "dashboard" && currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
-      sessionStorage.setItem("aey_credits_just_added", "true");
+      const cred = await getCredits();
+      setCreditsData(cred);
       setStep(7);
       return;
     }
@@ -2745,7 +2763,8 @@ useEffect(() => {
 
     if (savedSessionId && currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
-      sessionStorage.setItem("aey_credits_just_added", "true");
+      const cred = await getCredits();
+      setCreditsData(cred);
       const session = await restoreSessionState(savedSessionId);
       if (session) {
         setCategory(session.role_family || null);
@@ -2761,6 +2780,8 @@ useEffect(() => {
       }
     } else if (currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
+      const cred = await getCredits();
+      setCreditsData(cred);
       sessionStorage.setItem("aey_credits_just_added", "true");
       setStep(2);
     } else {
@@ -2815,21 +2836,21 @@ useEffect(() => {
               mode={authDestination === "dashboard" ? "signin" : "create"}
               onAuth={(user, token) => {
                 currentUser = user; currentAccessToken = token; setAuthed(true);
-                // Load profile silently after auth
+                // Load profile and credits silently after auth
                 getProfile().then(profile => {
                   setUserProfile(profile);
-                  // New user (no profile) goes straight to category
-                  // Returning user goes to credits check → dashboard
                   const dest = authDestination === "dashboard" ? 7 : (profile?.background ? 2 : 3);
                   setStep(dest);
                 });
+                getCredits().then(cred => setCreditsData(cred));
               }}
             />
           )}
           {step === 2 && (
             <CreditsStep
+              creditsData={creditsData}
               onContinue={() => setStep(7)}
-              onBuyCredits={() => { /* handled inside CreditsStep via Stripe links */ }}
+              onBuyCredits={() => { }}
             />
           )}
           {step === 3 && (
@@ -2882,6 +2903,8 @@ useEffect(() => {
               onBack={() => setStep(6)}
               userProfile={userProfile}
               onProfileSaved={(updated) => setUserProfile(updated)}
+              initialCreditsData={creditsData}
+              onCreditsRefresh={() => getCredits().then(cred => setCreditsData(cred))}
             />
           )}
         </main>
