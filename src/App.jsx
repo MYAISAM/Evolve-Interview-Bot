@@ -1341,7 +1341,7 @@ function AboutStep({ onNext }) {
 }
 
 // ── Coaching Session ──────────────────────────────────────────────
-function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restoredSession, onFinish, onBackToAbout }) {
+function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restoredSession, onFinish, onBackToAbout, hasCredits }) {
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -1357,7 +1357,7 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
   const [feedbackIsGibberish, setFeedbackIsGibberish] = useState(false);
   const [paid, setPaid] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("paid") === "true";
+    return params.get("paid") === "true" || !!hasCredits;
   });
   const [pendingAnswers, setPendingAnswers] = useState(null);
   const recognitionRef = useRef(null);
@@ -1457,7 +1457,21 @@ function CoachingStep({ category, roleFamily, careerStage, jd, userInfo, restore
       completed: false,
       paid: false,
     });
-    if (session?.id) sessionIdRef.current = session.id;
+    if (session?.id) {
+      sessionIdRef.current = session.id;
+      // Decrement credit if user has credits (not coming from Stripe)
+      if (hasCredits) {
+        const token = currentAccessToken || sessionStorage.getItem("aey_token");
+        const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+        if (token && user) {
+          fetch(AUTH_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "decrementCredit", userId: user.id, sessionId: session.id, accessToken: token }),
+          }).catch(e => console.error("Decrement credit error:", e));
+        }
+      }
+    }
 
     try {
       const validationRes = await fetch(API, {
@@ -2881,6 +2895,7 @@ useEffect(() => {
               jd={jd}
               userInfo={userInfo}
               restoredSession={restoredSession}
+              hasCredits={!!(creditsData && creditsData.credits_remaining > 0)}
               onFinish={(ans, sessId) => { setSessionAnswers(ans); setCurrentSessionId(sessId || null); setStep(6); }}
               onBackToAbout={() => setStep(4)}
             />
