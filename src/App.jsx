@@ -1504,6 +1504,7 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
   useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [currentQ]);
 
   async function buildQuestions() {
+    const whyQuestion = "Why do you want this job?";
     const shuffled = roleFamily && careerStage
       ? [
           ...[...QUESTION_BANK[roleFamily].questions].sort(() => Math.random() - 0.5).slice(0, 2),
@@ -1583,18 +1584,26 @@ Reply with only the word VALID if both are genuine real responses, or INVALID if
 
 CRITICAL RULES:
 - Read the job description carefully and extract specific requirements, skills, tools, and responsibilities mentioned
-- Each question MUST reference something specific from the job description — a named skill, responsibility, tool, or challenge mentioned in the spec
+- Each question MUST be anchored to something specific from the job description — a named skill, responsibility, tool, or challenge mentioned in the spec
 - Do NOT generate generic interview questions — every question must be tailored to THIS role
 - Mix behavioural (past experience) and situational (hypothetical scenario) questions
 - Make questions feel like they came from a real hiring manager who read the spec, not a template
 - Return ONLY a valid JSON array of strings, no markdown, no explanation
 
-Job Description:
+CRITICAL — SOURCE SEPARATION. Two separate sources of information are provided below. You must never confuse them:
+1. JOB DESCRIPTION: what the employer says about the role. Use this to generate relevant questions.
+2. CANDIDATE INFORMATION: what the candidate has told us about themselves. Use this only to personalise the tone and difficulty — never to attribute claims to the candidate that only appear in the JD.
+
+A question like "You mentioned hiring from 10,000 applicants" is wrong if that detail came from the JD. The candidate never said that. Questions must only reference what the CANDIDATE has stated when using phrases like "you mentioned", "you said", or "based on your experience". For JD details, frame as "this role involves..." or "the spec mentions..." or ask them to speak to that area.
+
+JOB DESCRIPTION (employer's words — do not attribute to candidate):
 ${jd}
 
-Role Category: ${contextLabel}
-Candidate background: ${userInfo.background}
+CANDIDATE INFORMATION (what the candidate has told us — safe to reference directly):
+Background: ${userInfo.background}
 Why they want this role: ${userInfo.why}
+
+Role Category: ${contextLabel}
 
 Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
           }],
@@ -1606,17 +1615,16 @@ Return format: ["Question 1?", "Question 2?", "Question 3?", "Question 4?"]`,
         ...shuffled.map(q => ({ q, type: "curated" })),
         ...aiQuestions.map(q => ({ q, type: "ai" })),
       ].sort(() => Math.random() - 0.5);
-      setQuestions(combined.map(x => x.q));
-      setQuestionTypes(combined.map(x => x.type));
+      setQuestions([whyQuestion, ...combined.map(x => x.q)]);
+      setQuestionTypes(["curated", ...combined.map(x => x.type)]);
     } catch {
       const fallback = [
-        "Tell me about yourself and why you're applying for this role.",
         "What relevant experience do you bring?",
         "Describe a challenge you've overcome at work.",
         "Where do you want to be in three years?",
       ];
-      setQuestions([...shuffled, ...fallback].slice(0, 7));
-      setQuestionTypes([...shuffled.map(() => "curated"), ...fallback.map(() => "ai")].slice(0, 7));
+      setQuestions([whyQuestion, ...shuffled, ...fallback].slice(0, 8));
+      setQuestionTypes(["curated", ...shuffled.map(() => "curated"), ...fallback.map(() => "ai")].slice(0, 8));
     }
     setPhase("answering");
   }
@@ -2141,10 +2149,8 @@ CANDIDATE CONTEXT:
 - Their stated worry going in: ${userInfo.worry || "none given"}
 - Role category: ${cat.label}
 
-THEIR SESSION — questions, answers, and coaching they received:
-${answers.filter(a => a.genuine).map((a, i) => `Q${i + 1}: ${a.q}
-Their answer: ${a.a}
-Coaching they received: ${a.feedback}`).join("\n\n")}
+THEIR SESSION — all questions in order, with answers and coaching where provided:
+${answers.map((a, i) => a.genuine ? `Q${i + 1}: ${a.q}\nTheir answer: ${a.a}\nCoaching they received: ${a.feedback}` : `Q${i + 1}: ${a.q}\n[Skipped — no answer given]`).join("\n\n")}
 
 INSTRUCTIONS:
 If they named a specific worry (e.g. "15 years since I interviewed", "I struggle with confidence", "I don't have a degree"), you MUST address it directly in at least one section. Don't let them walk in still carrying it unaddressed.
@@ -2526,6 +2532,33 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
             No cheat sheet saved for this session.
           </div>
         )}
+
+        {selectedSession.answers && Array.isArray(selectedSession.answers) && selectedSession.answers.length > 0 && (
+          <div style={{ marginTop: 32 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: t.inkMid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>Full Q&amp;A from this session</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {selectedSession.answers.map((item, i) => (
+                <div key={i} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, padding: "16px 18px" }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Q{i + 1}</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: t.ink, marginBottom: item.a ? 10 : 0, lineHeight: 1.5 }}>{item.q}</p>
+                  {item.genuine && item.a ? (
+                    <>
+                      <p style={{ fontSize: 13, color: t.inkMid, lineHeight: 1.6, marginBottom: item.feedback ? 10 : 0, borderLeft: `3px solid ${t.border}`, paddingLeft: 12 }}>{item.a}</p>
+                      {item.feedback && (
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "#f0f9f0", borderRadius: 8 }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: t.accentGreen, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Coaching</p>
+                          <RenderMarkdown text={item.feedback} />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p style={{ fontSize: 13, color: t.inkLight, fontStyle: "italic" }}>Skipped</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -2634,7 +2667,7 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
                       <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>
                         {sess.job_title || sess.category_label || "Interview session"}
                         {sess.career_stage && sess.career_stage !== sess.category_label && (
-                          <span style={{ fontWeight: 400, color: t.inkMid }}> · {sess.career_stage}</span>
+                          <span style={{ fontWeight: 400, color: t.inkMid }}> · {QUESTION_BANK[sess.career_stage]?.label || sess.career_stage}</span>
                         )}
                       </span>
                       {sess.completed && <Tag colour={t.tag} textColour={t.tagText}>Complete</Tag>}
@@ -2890,6 +2923,14 @@ useEffect(() => {
     currentUser = null; currentAccessToken = null;
   }
 
+  function resetSession() {
+    // Clears session state only — keeps auth intact, returns to category picker
+    setCategory(null); setRoleFamily(null);
+    setCareerStage(null); setJd(""); setJobTitle(""); setCompany(""); setUserInfo(null);
+    setSessionAnswers([]); setCurrentSessionId(null);
+    setStep(3);
+  }
+
   return (
     <>
       <style>{css}</style>
@@ -2906,12 +2947,22 @@ useEffect(() => {
                   Sign in
                 </button>
               )}
-              {step > 0 && authed && step !== 7 && (
+              {authed && step !== 7 && step > 0 && (
                 <button onClick={() => setStep(7)} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
                   My sessions
                 </button>
               )}
-              {step > 0 && (
+              {authed && step >= 3 && step <= 6 && (
+                <button onClick={resetSession} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                  Start over
+                </button>
+              )}
+              {authed && (
+                <button onClick={reset} style={{ background: "none", border: "none", color: t.inkLight, cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                  Sign out
+                </button>
+              )}
+              {!authed && step > 0 && (
                 <button onClick={reset} style={{ background: "none", border: "none", color: "#555555", cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
                   ← Start over
                 </button>
