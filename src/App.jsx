@@ -1750,26 +1750,41 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
       setPhase("paywall");
       // Save full session state to Supabase so we can restore after Stripe redirect
       if (currentAccessToken) {
-        saveSessionState({
-          session_token: sessionIdRef.current || generateToken(),
-          user_id: currentUser?.id,
-          role_family: roleFamily || "",
-          career_stage: careerStage || "",
-          category_label: bank?.label || "",
-          jd: jd || "",
-          user_info: userInfo,
+        const paywallState = {
           questions: questions,
           question_types: questionTypes,
           answers: newAnswers,
           current_q: 3,
           paid: false,
-        }).then(savedId => {
-          if (savedId) {
-            sessionIdRef.current = savedId;
-            // Save to sessionStorage so Stripe redirect can restore it
-            sessionStorage.setItem("aey_session_id", savedId);
-          }
-        });
+        };
+        if (sessionIdRef.current) {
+          // Update the existing session row — don't create a duplicate
+          supabaseUpdate(sessionIdRef.current, paywallState);
+          sessionStorage.setItem("aey_session_id", sessionIdRef.current);
+        } else {
+          // No session yet — create one now
+          saveSessionState({
+            session_token: generateToken(),
+            user_id: currentUser?.id,
+            role_family: roleFamily || "",
+            career_stage: careerStage || "",
+            category_label: bank?.label || "",
+            jd: jd || "",
+            job_title: jobTitle || null,
+            company: company || null,
+            user_info: userInfo,
+            questions: questions,
+            question_types: questionTypes,
+            answers: newAnswers,
+            current_q: 3,
+            paid: false,
+          }).then(savedId => {
+            if (savedId) {
+              sessionIdRef.current = savedId;
+              sessionStorage.setItem("aey_session_id", savedId);
+            }
+          });
+        }
       }
       return;
     }
@@ -1778,6 +1793,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
       supabaseUpdate(sessionIdRef.current, {
         questions_answered: newAnswers.filter(a => a.genuine).length,
         completed: isLastQuestion,
+        answers: newAnswers,
       });
     }
 
@@ -1793,6 +1809,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
         supabaseUpdate(sessionIdRef.current, {
           questions_answered: pendingAnswers.filter(a => a.genuine).length,
           completed: isLastQuestion,
+          answers: pendingAnswers,
         });
       }
       if (isLastQuestion) { onFinish(pendingAnswers, sessionIdRef.current); }
@@ -1818,26 +1835,39 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
       setPendingAnswers(newAnswers);
       setPhase("paywall");
       if (currentAccessToken) {
-        saveSessionState({
-          session_token: sessionIdRef.current || generateToken(),
-          user_id: currentUser?.id,
-          role_family: roleFamily || "",
-          career_stage: careerStage || "",
-          category_label: bank?.label || "",
-          jd: jd || "",
-          user_info: userInfo,
+        const skipPaywallState = {
           questions: questions,
           question_types: questionTypes,
           answers: newAnswers,
           current_q: 3,
           paid: false,
-        }).then(savedId => {
-          if (savedId) {
-            sessionIdRef.current = savedId;
-            // Save to sessionStorage so Stripe redirect can restore it
-            sessionStorage.setItem("aey_session_id", savedId);
-          }
-        });
+        };
+        if (sessionIdRef.current) {
+          supabaseUpdate(sessionIdRef.current, skipPaywallState);
+          sessionStorage.setItem("aey_session_id", sessionIdRef.current);
+        } else {
+          saveSessionState({
+            session_token: generateToken(),
+            user_id: currentUser?.id,
+            role_family: roleFamily || "",
+            career_stage: careerStage || "",
+            category_label: bank?.label || "",
+            jd: jd || "",
+            job_title: jobTitle || null,
+            company: company || null,
+            user_info: userInfo,
+            questions: questions,
+            question_types: questionTypes,
+            answers: newAnswers,
+            current_q: 3,
+            paid: false,
+          }).then(savedId => {
+            if (savedId) {
+              sessionIdRef.current = savedId;
+              sessionStorage.setItem("aey_session_id", savedId);
+            }
+          });
+        }
       }
       return;
     }
@@ -2147,7 +2177,7 @@ CANDIDATE CONTEXT:
 - Background: ${userInfo.background}
 - Why this role: ${userInfo.why}
 - Their stated worry going in: ${userInfo.worry || "none given"}
-- Role category: ${cat.label}
+- Role: ${jobTitle ? jobTitle : cat.label}${company ? ` at ${company}` : ""}
 
 THEIR SESSION — all questions in order, with answers and coaching where provided:
 ${answers.map((a, i) => a.genuine ? `Q${i + 1}: ${a.q}\nTheir answer: ${a.a}\nCoaching they received: ${a.feedback}` : `Q${i + 1}: ${a.q}\n[Skipped — no answer given]`).join("\n\n")}
@@ -2329,7 +2359,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
       <div id="pdf-content" className="cheat-sheet-print print-only">
         <h1>AI Evolving You — Interview Cheat Sheet</h1>
         <p style={{ fontSize: 12, color: "#555555", marginBottom: 16 }}>
-          Role: {cat?.label} · Generated {new Date().toLocaleDateString("en-GB")}
+          {jobTitle ? `${jobTitle}${company ? ` · ${company}` : ""}` : cat?.label} · Generated {new Date().toLocaleDateString("en-GB")}
         </p>
         <hr className="divider" />
         <RenderMarkdown text={cheatSheet} />
@@ -2564,7 +2594,29 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
   }
 
   const credits = creditsData ? creditsData.credits_remaining : 0;
-  const mostRecentSessionId = sessions.length > 0 ? sessions[0].id : null;
+
+  // Filter out ghost sessions (no questions generated yet) and group by recency
+  const realSessions = sessions.filter(s => s.questions_answered > 0 || s.completed || s.cheat_sheet);
+  const mostRecentSessionId = realSessions.length > 0 ? realSessions[0].id : null;
+
+  function groupSessionsByDate(sessList) {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const recent = [];
+    const byMonth = {};
+    sessList.forEach(s => {
+      const d = new Date(s.created_at);
+      if (d >= cutoff) {
+        recent.push(s);
+      } else {
+        const key = d.toLocaleString("en-GB", { month: "long", year: "numeric" });
+        if (!byMonth[key]) byMonth[key] = [];
+        byMonth[key].push(s);
+      }
+    });
+    return { recent, byMonth };
+  }
+  const { recent: recentSessions, byMonth: olderByMonth } = groupSessionsByDate(realSessions);
 
   const SectionDivider = () => (
     <div style={{ borderTop: `1px solid ${t.border}`, margin: "24px 0" }} />
@@ -2645,14 +2697,13 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
       {/* ── Past sessions ── */}
       <p style={{ fontSize: 11, fontWeight: 700, color: t.inkMid, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Past sessions</p>
 
-      {sessions.length === 0 ? (
+      {realSessions.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0" }}>
           <p style={{ color: t.inkMid, fontSize: 14, marginBottom: 20 }}>No sessions yet. Start your first one.</p>
           <Btn onClick={onNewSession}>Start a session →</Btn>
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {sessions.map((sess, idx) => {
+      ) : (() => {
+        const renderSessionCard = (sess) => {
             const saved = outcomeSaved[sess.id];
             const isEditing = outcomeForm && outcomeForm.sessionId === sess.id;
             const displayOutcome = saved ? saved.outcome : sess.interview_outcome;
@@ -2665,17 +2716,14 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>
-                        {sess.job_title || sess.category_label || "Interview session"}
-                        {sess.career_stage && sess.career_stage !== sess.category_label && (
-                          <span style={{ fontWeight: 400, color: t.inkMid }}> · {QUESTION_BANK[sess.career_stage]?.label || sess.career_stage}</span>
-                        )}
+                        {sess.job_title || sess.category_label || "Interview session"}{sess.company && sess.job_title ? ` · ${sess.company}` : ""}
                       </span>
                       {sess.completed && <Tag colour={t.tag} textColour={t.tagText}>Complete</Tag>}
                       {!sess.completed && <Tag colour={t.surfaceAlt} textColour={t.inkMid}>In progress</Tag>}
                       {isNewest && <Tag colour="#fdf0e6" textColour={t.accentPop}>Just added</Tag>}
                     </div>
                     <p style={{ fontSize: 11, color: t.inkLight }}>
-                      {sess.company ? `${sess.company} · ` : sess.category_label ? `${sess.category_label} · ` : ""}{formatDate(sess.created_at)}
+                      {sess.category_label ? `${sess.category_label} · ` : ""}{formatDate(sess.created_at)}
                     </p>
                   </div>
                   <Icon name="arrow" size={15} colour={t.inkLight} />
@@ -2720,9 +2768,28 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+        };
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {recentSessions.length > 0 && (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Last 14 days</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                  {recentSessions.map(s => renderSessionCard(s))}
+                </div>
+              </>
+            )}
+            {Object.entries(olderByMonth).map(([month, monthSessions]) => (
+              <div key={month} style={{ marginBottom: 24 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: t.inkLight, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{month}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {monthSessions.map(s => renderSessionCard(s))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       <SectionDivider />
 
