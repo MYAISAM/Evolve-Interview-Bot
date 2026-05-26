@@ -1555,12 +1555,22 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
           max_tokens: 50,
           messages: [{
             role: "user",
-            content: `You are checking whether two short pieces of text are genuine, meaningful responses from a real person — not gibberish, random letters, placeholder text, or nonsense.
+            content: `You are checking whether two pieces of text are genuine human responses — not gibberish or random characters.
+
+ONLY return INVALID if a field contains:
+- Random keyboard mashing (e.g. "asdfjkl", "qwerty123", "ppppp")
+- Completely meaningless character sequences
+- A single character or empty-looking content
+- Obvious placeholder text like "test" or "xxx"
+
+Return VALID for anything else — including short answers, rough answers, polished answers, one-sentence answers, or anything that reads like a real person wrote it, even if brief.
+
+Do NOT return INVALID for well-written text, long paragraphs, or professional-sounding language. Those are valid.
 
 Background: "${userInfo.background}"
 Why this role: "${userInfo.why}"
 
-Reply with only the word VALID if both are genuine real responses, or INVALID if either appears to be gibberish, random characters, or not a real answer. Nothing else.`,
+Reply with only VALID or INVALID. Nothing else.`,
           }],
         }),
       });
