@@ -1228,7 +1228,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
   const [jd, setJd] = useState("");
   useScrollToTop("role");
 
-  const canContinue = jobTitle.trim().length >= 2 && why.length >= 20 && jd.length >= 40;
+  const canContinue = jobTitle.trim().length >= 2 && jd.length >= 40;
 
   return (
     <div className="fade-up" style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px 60px" }}>
@@ -1290,20 +1290,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
         />
       </div>
 
-      {/* Why this role -- always shown */}
-      <div style={{ marginBottom: 28 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.accentPop, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          Why this role? <span style={{ color: t.accentPop }}>*</span>
-        </label>
-        <p style={{ fontSize: 12, color: t.inkLight, marginBottom: 8, fontStyle: "italic" }}>
-          What draws you to it? Your answer shapes the motivation coaching.
-        </p>
-        <textarea
-          value={why} onChange={e => setWhy(e.target.value)} rows={3}
-          placeholder="What excites you about this role specifically..."
-          style={{ width: "100%", background: t.surface, border: `1.5px solid ${why.length > 20 ? t.ink : t.border}`, borderRadius: 8, padding: "12px 14px", color: t.ink, fontSize: 14, lineHeight: 1.6, outline: "none", transition: "border-color 0.2s" }}
-        />
-      </div>
+
 
       {/* For returning users show profile summary */}
       {isReturning && existingProfile?.background && (
@@ -1317,14 +1304,14 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
       )}
 
       <Btn
-        onClick={() => onNext({ jobTitle: jobTitle.trim(), company: company.trim(), why, jd })}
+        onClick={() => onNext({ jobTitle: jobTitle.trim(), company: company.trim(), why: "", jd })}
         disabled={!canContinue}
       >
         Continue →
       </Btn>
       {!canContinue && (jobTitle.length > 0 || jd.length > 0 || why.length > 0) && (
         <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
-          {jobTitle.trim().length < 2 ? "Add the job title to continue" : jd.length < 40 ? "Paste the job description to continue" : "Add a little more detail to continue"}
+          {jobTitle.trim().length < 2 ? "Add the job title to continue" : "Paste the job description to continue"}
         </p>
       )}
     </div>
@@ -2129,6 +2116,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
 function SummaryStep({ answers, userInfo, category, sessionId, onRestart, onViewHistory }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
+  const [sheetError, setSheetError] = useState(false);
   const cat = QUESTION_BANK[category];
   useScrollToTop("summary");
 
@@ -2170,6 +2158,13 @@ function SummaryStep({ answers, userInfo, category, sessionId, onRestart, onView
 
   async function generateSummary() {
     try {
+      // Sanitise answers — strip any corrupt characters that could break JSON or the prompt
+      const safeAnswers = answers.map(a => ({
+        ...a,
+        q: (a.q || "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"'),
+        a: (a.a || "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').slice(0, 2000),
+        feedback: (a.feedback || "").slice(0, 1000),
+      }));
       const res = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2190,7 +2185,7 @@ CANDIDATE CONTEXT:
 - Role: ${jobTitle ? jobTitle : cat.label}${company ? ` at ${company}` : ""}
 
 THEIR SESSION — all questions in order, with answers and coaching where provided:
-${answers.map((a, i) => a.genuine ? `Q${i + 1}: ${a.q}\nTheir answer: ${a.a}\nCoaching they received: ${a.feedback}` : `Q${i + 1}: ${a.q}\n[Skipped — no answer given]`).join("\n\n")}
+${safeAnswers.map((a, i) => a.genuine ? `Q${i + 1}: ${a.q}\nTheir answer: ${a.a}\nCoaching they received: ${a.feedback}` : `Q${i + 1}: ${a.q}\n[Skipped — no answer given]`).join("\n\n")}
 
 INSTRUCTIONS:
 If they named a specific worry (e.g. "15 years since I interviewed", "I struggle with confidence", "I don't have a degree"), you MUST address it directly in at least one section. Don't let them walk in still carrying it unaddressed.
@@ -2244,8 +2239,9 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
       if (sessionId) {
         supabaseUpdate(sessionId, { cheat_sheet: sheetText, completed: true });
       }
-    } catch {
-      setCheatSheet("Your strongest moments:\n• You showed up and practised — that already puts you ahead of most candidates\n• Your answers show real experience and self-awareness\n• You engaged honestly with the difficult questions\n\nWatch out for:\n• Keep answers to 60–90 seconds — less is more\n• Back every claim with a specific example\n\nWalk in with this:\nYou've done the work. Back yourself.");
+    } catch (err) {
+      console.error("Cheat sheet generation failed:", err);
+      setSheetError(true);
     }
     setLoadingSheet(false);
   }
@@ -2278,7 +2274,13 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
       )}
 
       <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
-        {loadingSheet ? (
+        {sheetError ? (
+          <div style={{ textAlign: "center", padding: "30px 0" }}>
+            <Icon name="warning" size={32} colour={t.accentPop} />
+            <p style={{ marginTop: 12, color: t.inkMid, fontSize: 14, marginBottom: 16 }}>Something went wrong generating your cheat sheet.</p>
+            <Btn onClick={() => { setSheetError(false); setLoadingSheet(true); generateSummary(); }}>Try again</Btn>
+          </div>
+        ) : loadingSheet ? (
           <div style={{ textAlign: "center", padding: "30px 0" }}>
             <ThinkingDots colour={t.accentGreen} />
             <p style={{ marginTop: 12, color: t.inkLight, fontStyle: "italic", fontSize: 13 }}>Building your cheat sheet…</p>
