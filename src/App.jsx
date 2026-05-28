@@ -1533,42 +1533,18 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
       }
     }
 
+    // Quick local check — if background has real words (10+ chars with spaces), skip API validation entirely
+    const bg = userInfo?.background || "";
+    const looksGenuine = bg.length >= 10 && bg.includes(" ");
+    
+    if (!looksGenuine) {
+      // Definitely gibberish — block without API call
+      setOnboardingInvalid(true);
+      setLoadingQuestions(false);
+      return;
+    }
+    // Looks genuine (10+ chars with spaces) — proceed directly to question generation
     try {
-      const validationRes = await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 50,
-          messages: [{
-            role: "user",
-            content: `You are checking whether two pieces of text are genuine human responses — not gibberish or random characters.
-
-ONLY return INVALID if a field contains:
-- Random keyboard mashing (e.g. "asdfjkl", "qwerty123", "ppppp")
-- Completely meaningless character sequences
-- A single character or empty-looking content
-- Obvious placeholder text like "test" or "xxx"
-
-Return VALID for anything else — including short answers, rough answers, polished answers, one-sentence answers, or anything that reads like a real person wrote it, even if brief.
-
-Do NOT return INVALID for well-written text, long paragraphs, or professional-sounding language. Those are valid.
-
-Background: "${userInfo.background}"
-Why this role: "${userInfo.why}"
-
-Reply with only VALID or INVALID. Nothing else.`,
-          }],
-        }),
-      });
-      const validationData = await validationRes.json();
-      const validationResult = validationData.content[0].text.trim().toUpperCase();
-
-      if (validationResult.includes("INVALID")) {
-        setOnboardingInvalid(true);
-        return;
-      }
-
       const res = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
