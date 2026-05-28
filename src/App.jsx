@@ -1309,7 +1309,7 @@ function RoleStep({ onNext, existingProfile, isReturning }) {
       >
         Continue →
       </Btn>
-      {!canContinue && (jobTitle.length > 0 || jd.length > 0 || why.length > 0) && (
+      {!canContinue && (jobTitle.length > 0 || jd.length > 0) && (
         <p style={{ color: t.inkLight, fontSize: 12, marginTop: 10, fontStyle: "italic" }}>
           {jobTitle.trim().length < 2 ? "Add the job title to continue" : "Paste the job description to continue"}
         </p>
@@ -1543,7 +1543,33 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
       setLoadingQuestions(false);
       return;
     }
-    // Looks genuine (10+ chars with spaces) — proceed directly to question generation
+    // API relevance check — is this actually about work/career experience?
+    try {
+      const relevanceRes = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 5,
+          messages: [{
+            role: "user",
+            content: `Does this text describe someone's professional background, career experience, or interview worry? Answer YES or NO only.
+
+Text: "${userInfo.background}"`,
+          }],
+        }),
+      });
+      const relevanceData = await relevanceRes.json();
+      const relevanceResult = (relevanceData.content?.[0]?.text || "YES").trim().toUpperCase();
+      if (relevanceResult.includes("NO")) {
+        setOnboardingInvalid(true);
+        setLoadingQuestions(false);
+        return;
+      }
+    } catch {
+      // If relevance check fails, proceed anyway — don't block on API errors
+    }
+
     try {
       const res = await fetch(API, {
         method: "POST",
@@ -2089,7 +2115,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
     </div>
   );
 }
-function SummaryStep({ answers, userInfo, category, sessionId, onRestart, onViewHistory }) {
+function SummaryStep({ answers, userInfo, category, sessionId, jobTitle, company, onRestart, onViewHistory }) {
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
   const [sheetError, setSheetError] = useState(false);
@@ -3109,6 +3135,8 @@ useEffect(() => {
               userInfo={userInfo}
               category={category}
               sessionId={currentSessionId}
+              jobTitle={jobTitle}
+              company={company}
               onRestart={reset}
               onViewHistory={() => setStep(7)}
             />
