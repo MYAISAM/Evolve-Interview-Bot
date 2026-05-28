@@ -212,21 +212,30 @@ const css = `
     #pdf-content {
       display: block !important;
       position: static !important;
-      width: auto !important;
+      width: 100% !important;
       max-width: none !important;
       height: auto !important;
-      min-height: 0 !important;
+      min-height: 100% !important;
       overflow: visible !important;
-      padding: 0 !important;
+      padding: 20px !important;
       margin: 0 !important;
       font-family: 'Inter', sans-serif;
       color: #111111;
       background: white;
-  }
+      page-break-inside: auto;
+    }
 
-#pdf-content > * {
-  overflow: visible !important;
-}
+    #pdf-content > * {
+      overflow: visible !important;
+      page-break-inside: avoid;
+    }
+
+    #pdf-content pre {
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+      overflow: visible !important;
+      page-break-inside: auto !important;
+    }
 
     .cheat-sheet-print h1 {
       font-size: 22px;
@@ -324,7 +333,7 @@ function Icon({ name, size = 20, colour = t.accentGreen }) {
 
 // ── Question Bank ─────────────────────────────────────────────────
 const ROLE_FAMILIES = ["commercial", "people_talent", "product_tech", "marketing", "finance_ops", "hr_people", "project_programme", "general"];
-const CAREER_STAGES = ["graduate", "experienced", "career_changer", "returner", "mindset", "tough_questions"];
+const CAREER_STAGES = ["graduate", "mid_level", "experienced", "career_changer", "returner", "mindset", "tough_questions"];
 
 const QUESTION_BANK = {
 
@@ -675,6 +684,41 @@ const QUESTION_BANK = {
       "Tell me about a time you had to course-correct a strategy that wasn't working.",
       "How do you balance being a strategic leader with still being hands-on when it matters?",
       "What do you know now that you wish you'd known ten years ago?",
+    ],
+  },
+
+  mid_level: {
+    label: "Mid-Level Professional",
+    sublabel: "2-5 years experience, growing into your field",
+    icon: "check",
+    colour: "#e8f4fe",
+    borderColour: "#1d6fa8",
+    questions: [
+      "Tell me about a project you've owned end-to-end — what did you learn from it?",
+      "How are you developing yourself at this stage of your career?",
+      "Describe a time you had to push back on a decision you disagreed with.",
+      "Tell me about a time you had to work effectively with someone difficult.",
+      "How do you prioritise when you have more on your plate than you can realistically deliver?",
+      "Describe a time you took initiative without being asked — what happened?",
+      "Tell me about the most useful piece of feedback you've received in your career so far.",
+      "How do you know when you've done a good job?",
+      "Describe a time you had to learn something new quickly under pressure.",
+      "Tell me about a mistake you made at work and what you did about it.",
+      "How do you build relationships with colleagues or stakeholders you don't work with day to day?",
+      "Describe a time you had to manage competing priorities — how did you decide what to focus on?",
+      "Tell me about a time you contributed to something bigger than your own role.",
+      "How do you handle uncertainty or ambiguity in a work setting?",
+      "Describe a situation where you had to adapt your communication style for a different audience.",
+      "Tell me about a time you supported or mentored someone more junior than you.",
+      "How do you approach getting up to speed in a new role or environment?",
+      "Describe a time you spotted a problem before it became a bigger issue.",
+      "Tell me about a time you had to deliver something under pressure — how did you manage it?",
+      "What motivates you to do your best work — and how does this role connect to that?",
+      "Describe a time you had to balance quality with speed — what did you decide?",
+      "Tell me about something you've taught yourself outside of formal training.",
+      "How do you think about your own career development over the next few years?",
+      "Describe a time you had to deal with a setback at work — what did you do next?",
+      "What are you most proud of in your career so far?",
     ],
   },
 
@@ -2305,7 +2349,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           </div>
         </div>
         <button
-          onClick={() => setTimeout(() => window.print(), 300)}
+          onClick={() => { window.scrollTo(0, 0); setTimeout(() => window.print(), 800); }}
           disabled={loadingSheet}
           style={{
             background: loadingSheet ? t.inkLight : t.accentGreen,
