@@ -2305,7 +2305,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           </div>
         </div>
         <button
-          onClick={() => window.print()}
+          onClick={() => setTimeout(() => window.print(), 300)}
           disabled={loadingSheet}
           style={{
             background: loadingSheet ? t.inkLight : t.accentGreen,
@@ -2376,7 +2376,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           {jobTitle ? `${jobTitle}${company ? ` · ${company}` : ""}` : (cat?.label || category || "Interview session")} · Generated {new Date().toLocaleDateString("en-GB")}
         </p>
         <hr className="divider" />
-        <RenderMarkdown text={cheatSheet} />
+        <pre style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#111111" }}>{cheatSheet}</pre>
         {answers.length > 0 && (
           <>
             <hr className="divider" />
@@ -2884,6 +2884,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState(null); // { background, worry } from profiles table
   const [creditsData, setCreditsData] = useState(null); // { credits_remaining, ... }
   const [stripeReturning, setStripeReturning] = useState(() => new URLSearchParams(window.location.search).get("paid") === "true");
+  const [magicLinkVerifying, setMagicLinkVerifying] = useState(() => { const h = window.location.hash; return h.includes("access_token="); });
 
   // Restore auth from sessionStorage on every load (survives Stripe redirect)
   useEffect(() => {
@@ -2927,12 +2928,13 @@ useEffect(() => {
           const savedDest = sessionStorage.getItem("aey_auth_dest") || "session";
           sessionStorage.removeItem("aey_auth_dest");
           const dest = savedDest === "dashboard" ? 7 : (profile?.background ? 2 : 3);
+          setMagicLinkVerifying(false);
           setStep(dest);
         });
         getCredits().then(cred => setCreditsData(cred));
       }
     })
-    .catch(e => console.error("Token catch error:", e));
+    .catch(e => { console.error("Token catch error:", e); setMagicLinkVerifying(false); });
 }, [setStep]);
 
 // ── Stripe return handler ─────────────────────────────────────────
@@ -3032,6 +3034,21 @@ useEffect(() => {
             <ThinkingDots colour={t.accentGreen} />
             <p style={{ marginTop: 16, fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 600, color: t.ink }}>Payment confirmed</p>
             <p style={{ marginTop: 8, fontFamily: "'Inter', sans-serif", fontSize: 14, color: t.inkMid }}>Returning you to your session...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (magicLinkVerifying) {
+    return (
+      <>
+        <style>{css}</style>
+        <div style={{ minHeight: "100vh", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center", padding: "60px 24px" }}>
+            <ThinkingDots colour={t.accentGreen} />
+            <p style={{ marginTop: 16, fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 600, color: t.ink }}>Signing you in...</p>
+            <p style={{ marginTop: 8, fontFamily: "'Inter', sans-serif", fontSize: 14, color: t.inkMid }}>Just a moment while we verify your link.</p>
           </div>
         </div>
       </>
