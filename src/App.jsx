@@ -2501,6 +2501,11 @@ function CreditsStep({ onContinue, onBuyCredits, creditsData: initialCredits }) 
           </div>
         </a>
       </div>
+      <p style={{ textAlign: "center", marginTop: 24 }}>
+        <button onClick={onContinue} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 14, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>
+          View my past sessions
+        </button>
+      </p>
     </div>
   );
 }
