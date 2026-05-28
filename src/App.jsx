@@ -3029,9 +3029,20 @@ useEffect(() => {
       setCreditsData(cred);
       const session = await restoreSessionState(savedSessionId);
       if (session) {
-        setCategory(session.role_family || null);
-        setRoleFamily(session.role_family || null);
-        setCareerStage(session.career_stage || null);
+        // role_family may be stored as label string — look up the key
+        const restoredCatKey = session.role_family
+          ? (QUESTION_BANK[session.role_family]
+              ? session.role_family
+              : Object.keys(QUESTION_BANK).find(k => QUESTION_BANK[k].label === session.role_family) || session.role_family)
+          : null;
+        setCategory(restoredCatKey);
+        setRoleFamily(restoredCatKey);
+        const restoredStageKey = session.career_stage
+          ? (QUESTION_BANK[session.career_stage]
+              ? session.career_stage
+              : Object.keys(QUESTION_BANK).find(k => QUESTION_BANK[k].label === session.career_stage) || session.career_stage)
+          : null;
+        setCareerStage(restoredStageKey);
         setJd(session.jd || "");
         setUserInfo(session.user_info || null);
         setRestoredSession(session);
