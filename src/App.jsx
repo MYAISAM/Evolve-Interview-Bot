@@ -212,10 +212,11 @@ const css = `
     #pdf-content {
       display: block !important;
       position: static !important;
+      left: 0 !important;
+      visibility: visible !important;
       width: 100% !important;
       max-width: none !important;
       height: auto !important;
-      min-height: 100% !important;
       overflow: visible !important;
       padding: 20px !important;
       margin: 0 !important;
@@ -298,7 +299,11 @@ const css = `
   }
 
   .print-only {
-    display: none;
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 800px;
+    visibility: hidden;
   }
 
 `;
@@ -2349,7 +2354,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           </div>
         </div>
         <button
-          onClick={() => { window.scrollTo(0, 0); setTimeout(() => window.print(), 800); }}
+          onClick={() => window.print()}
           disabled={loadingSheet}
           style={{
             background: loadingSheet ? t.inkLight : t.accentGreen,
