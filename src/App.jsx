@@ -2354,7 +2354,48 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
           </div>
         </div>
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            const printWindow = window.open("", "_blank", "width=800,height=900");
+            const styles = `
+              body { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; color: #111; padding: 32px; max-width: 720px; margin: 0 auto; }
+              h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+              h2 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; }
+              p { margin: 0 0 8px; }
+              pre { white-space: pre-wrap; word-break: break-word; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; }
+              hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
+              .qa-block { margin-bottom: 20px; }
+              .qa-q { font-weight: 600; margin-bottom: 4px; }
+              .qa-a { color: #444; margin-bottom: 4px; }
+              .qa-coaching { color: #c2410c; font-style: italic; }
+              .footer { font-size: 11px; color: #999; margin-top: 24px; }
+            `;
+            const qas = answers.filter(a => a.genuine && a.a).map((item, i) => {
+              const lines = (item.feedback || "").split("\n").map(l => l.trim()).filter(Boolean);
+              const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
+              const sharpenIdx = lines.findIndex(l => l.toLowerCase().startsWith("what to sharpen"));
+              const tryIdx = lines.findIndex(l => l.toLowerCase().startsWith("try saying"));
+              const coachingLine = sharpenIdx >= 0 ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l)) : lines.find(l => l.length > 20 && !isHeader(l));
+              const tryLine = tryIdx >= 0 ? lines.slice(tryIdx + 1).filter(l => l.length > 20 && !isHeader(l)).join(" ") : null;
+              return `<div class="qa-block">
+                <p class="qa-q">Q${i + 1}: ${item.q}</p>
+                <p class="qa-a">Your answer: ${item.a.length > 600 ? item.a.slice(0, 600) + "..." : item.a}</p>
+                ${coachingLine ? `<p class="qa-coaching">Coaching: ${coachingLine}</p>` : ""}
+                ${tryLine ? `<p class="qa-coaching">Try saying it like this: ${tryLine}</p>` : ""}
+              </div>`;
+            }).join("");
+            const title = jobTitle ? `${jobTitle}${company ? " · " + company : ""}` : (cat?.label || "Interview session");
+            printWindow.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${styles}</style></head><body>
+              <h1>AI Evolving You — Interview Cheat Sheet</h1>
+              <p style="font-size:12px;color:#555;margin-bottom:16px">${title} · Generated ${new Date().toLocaleDateString("en-GB")}</p>
+              <hr/>
+              <pre>${cheatSheet}</pre>
+              ${qas ? `<hr/><h2>Session Recap</h2>${qas}` : ""}
+              <hr/><p class="footer">coach.aievolvingyou.com</p>
+            </body></html>`);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); }, 500);
+          }}
           disabled={loadingSheet}
           style={{
             background: loadingSheet ? t.inkLight : t.accentGreen,
