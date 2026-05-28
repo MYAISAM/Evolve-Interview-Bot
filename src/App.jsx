@@ -2119,7 +2119,7 @@ function SummaryStep({ answers, userInfo, category, sessionId, jobTitle, company
   const [cheatSheet, setCheatSheet] = useState("");
   const [loadingSheet, setLoadingSheet] = useState(true);
   const [sheetError, setSheetError] = useState(false);
-  const cat = QUESTION_BANK[category];
+  const cat = QUESTION_BANK[category] || Object.values(QUESTION_BANK).find(v => v.label === category) || { label: category || "General" };
   useScrollToTop("summary");
 
   const genuineCount = answers.filter(a => a.genuine === true).length;
@@ -2184,7 +2184,7 @@ CANDIDATE CONTEXT:
 - Background: ${userInfo.background}
 - Why this role: ${userInfo.why}
 - Their stated worry going in: ${userInfo.worry || "none given"}
-- Role: ${jobTitle ? jobTitle : cat.label}${company ? ` at ${company}` : ""}
+- Role: ${jobTitle ? jobTitle : (cat?.label || "Not specified")}${company ? ` at ${company}` : ""}
 
 THEIR SESSION — all questions in order, with answers and coaching where provided:
 ${safeAnswers.map((a, i) => a.genuine ? `Q${i + 1}: ${a.q}\nTheir answer: ${a.a}\nCoaching they received: ${a.feedback}` : `Q${i + 1}: ${a.q}\n[Skipped — no answer given]`).join("\n\n")}
@@ -2373,7 +2373,7 @@ RULES: Use ONLY the • character for bullets. No **, *, or - anywhere. Headers 
       <div id="pdf-content" className="cheat-sheet-print print-only">
         <h1>AI Evolving You — Interview Cheat Sheet</h1>
         <p style={{ fontSize: 12, color: "#555555", marginBottom: 16 }}>
-          {jobTitle ? `${jobTitle}${company ? ` · ${company}` : ""}` : cat?.label} · Generated {new Date().toLocaleDateString("en-GB")}
+          {jobTitle ? `${jobTitle}${company ? ` · ${company}` : ""}` : (cat?.label || category || "Interview session")} · Generated {new Date().toLocaleDateString("en-GB")}
         </p>
         <hr className="divider" />
         <RenderMarkdown text={cheatSheet} />
