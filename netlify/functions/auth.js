@@ -112,14 +112,10 @@ exports.handler = async (event) => {
     }
 
     // ── Save full session state (called at paywall before Stripe) ─
-    // Saves everything needed to restore the session on return
     if (action === "saveSessionState") {
       const { accessToken, sessionState } = body;
-      // sessionState: { role_family, career_stage, category_label, jd,
-      //   user_info, questions, question_types, answers, current_q, tier }
       const client = authClient(accessToken);
 
-      // Check if a session row already exists for this session token
       const { data: existing } = await client
         .from("coach_sessions")
         .select("id")
@@ -129,7 +125,6 @@ exports.handler = async (event) => {
       let sessionId;
 
       if (existing) {
-        // Update existing row
         const { error } = await client
           .from("coach_sessions")
           .update({
@@ -140,7 +135,6 @@ exports.handler = async (event) => {
         if (error) throw error;
         sessionId = existing.id;
       } else {
-        // Insert new row
         const { data, error } = await client
           .from("coach_sessions")
           .insert({ ...sessionState, updated_at: new Date().toISOString() })
@@ -153,7 +147,6 @@ exports.handler = async (event) => {
     }
 
     // ── Restore session state (called on return from Stripe) ──────
-    // Fetches full session by ID so app can resume at correct question
     if (action === "restoreSessionState") {
       const { accessToken, sessionId } = body;
       const client = authClient(accessToken);
@@ -166,31 +159,28 @@ exports.handler = async (event) => {
       return ok({ session: data });
     }
 
-  // ── Get credits for current user ──────────────────────────────────────────
-if (action === "getCredits") {
-  const { accessToken } = body;
-  const client = authClient(accessToken);
-  const { data: userData } = await client.auth.getUser();
-  if (!userData?.user) return ok({ credits: { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
+    // ── Get credits for current user ──────────────────────────────
+    if (action === "getCredits") {
+      const { accessToken } = body;
+      const client = authClient(accessToken);
+      const { data: userData } = await client.auth.getUser();
+      if (!userData?.user) return ok({ credits: { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
 
-  const { data, error } = await supabaseAdmin
-    .from("credits")
-    .select("credits_remaining, total_purchased, total_used")
-    .eq("user_id", userData.user.id)
-    .single();
+      const { data, error } = await supabaseAdmin
+        .from("credits")
+        .select("credits_remaining, total_purchased, total_used")
+        .eq("user_id", userData.user.id)
+        .single();
 
-  if (error && error.code !== "PGRST116") throw error;
-  return ok({ credits: data || { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
-}
+      if (error && error.code !== "PGRST116") throw error;
+      return ok({ credits: data || { credits_remaining: 0, total_purchased: 0, total_used: 0 } });
+    }
 
     // ── Add credits after Stripe payment ─────────────────────────
-    // Called when user returns from Stripe with paid=true
-    // tier: 'single' (+1) or 'bundle' (+3)
     if (action === "addCredits") {
       const { accessToken, tier, stripePaymentId, userId } = body;
       const creditsToAdd = tier === "bundle" ? 3 : 1;
 
-      // Upsert credits row
       const { data: existing } = await supabaseAdmin
         .from("credits")
         .select("id, credits_remaining, total_purchased")
@@ -217,7 +207,6 @@ if (action === "getCredits") {
           });
       }
 
-      // Log the transaction
       await supabaseAdmin.from("credit_transactions").insert({
         user_id: userId,
         type: tier === "bundle" ? "purchase_bundle" : "purchase_single",
@@ -228,7 +217,7 @@ if (action === "getCredits") {
       return ok({ creditsAdded: creditsToAdd });
     }
 
-    // ── Decrement credit (called when session starts after paywall) ─
+    // ── Decrement credit ──────────────────────────────────────────
     if (action === "decrementCredit") {
       const { accessToken, userId, sessionId } = body;
 
@@ -252,7 +241,6 @@ if (action === "getCredits") {
         })
         .eq("user_id", userId);
 
-      // Log the transaction
       await supabaseAdmin.from("credit_transactions").insert({
         user_id: userId,
         type: "session_used",
@@ -263,12 +251,11 @@ if (action === "getCredits") {
       return ok({ creditsRemaining: existing.credits_remaining - 1 });
     }
 
-    // ── Create gift code (called after gift Stripe payment) ───────
+    // ── Create gift code ──────────────────────────────────────────
     if (action === "createGiftCode") {
       const { userId, tier, stripePaymentId } = body;
       const credits = tier === "gift_bundle" ? 3 : 1;
 
-      // Generate a unique code -- retry if collision
       let code;
       let attempts = 0;
       while (attempts < 5) {
@@ -303,7 +290,6 @@ if (action === "getCredits") {
     if (action === "redeemGiftCode") {
       const { accessToken, code, userId } = body;
 
-      // Look up the code
       const { data: gift, error: lookupError } = await supabaseAdmin
         .from("gift_codes")
         .select("*")
@@ -313,7 +299,6 @@ if (action === "getCredits") {
       if (lookupError || !gift) return err("Invalid gift code", 400);
       if (gift.redeemed) return err("This gift code has already been used", 400);
 
-      // Mark as redeemed
       await supabaseAdmin
         .from("gift_codes")
         .update({
@@ -323,7 +308,6 @@ if (action === "getCredits") {
         })
         .eq("id", gift.id);
 
-      // Add credits to recipient
       const { data: existing } = await supabaseAdmin
         .from("credits")
         .select("id, credits_remaining, total_purchased")
@@ -348,7 +332,6 @@ if (action === "getCredits") {
         });
       }
 
-      // Log the transaction
       await supabaseAdmin.from("credit_transactions").insert({
         user_id: userId,
         type: "gift_redeemed",
@@ -381,9 +364,9 @@ if (action === "getCredits") {
       const client = authClient(accessToken);
       const { data, error } = await client
         .from("coach_sessions")
-        .select("id, role_family, career_stage, category_label, completed, paid, tier, cheat_sheet, interview_outcome, interview_date, created_at")
+        .select("id, role_family, career_stage, job_title, company, category_label, completed, paid, tier, cheat_sheet, answers, questions, user_info, interview_outcome, interview_notes, interview_date, created_at, updated_at, questions_answered")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
       if (error) throw error;
       return ok({ sessions: data });
     }
@@ -405,42 +388,42 @@ if (action === "getCredits") {
       return ok({});
     }
 
-  // ── Get user profile ──────────────────────────────────────────
-  if (action === "getProfile") {
-    const { accessToken } = body;
-    const client = authClient(accessToken);
-    const { data: userData } = await client.auth.getUser();
-    if (!userData?.user) return err("Not authenticated", 401);
+    // ── Get user profile ──────────────────────────────────────────
+    if (action === "getProfile") {
+      const { accessToken } = body;
+      const client = authClient(accessToken);
+      const { data: userData } = await client.auth.getUser();
+      if (!userData?.user) return err("Not authenticated", 401);
 
-    const { data, error } = await supabaseAdmin
-      .from("profiles")
-      .select("background, worry, display_name")
-      .eq("user_id", userData.user.id)
-      .single();
+      const { data, error } = await supabaseAdmin
+        .from("profiles")
+        .select("background, worry, display_name")
+        .eq("user_id", userData.user.id)
+        .single();
 
-    if (error && error.code !== "PGRST116") throw error;
-    return ok({ profile: data || { background: null, worry: null, display_name: null } });
-  }
+      if (error && error.code !== "PGRST116") throw error;
+      return ok({ profile: data || { background: null, worry: null, display_name: null } });
+    }
 
-  // ── Save user profile ─────────────────────────────────────────
-  if (action === "saveProfile") {
-    const { accessToken, background, worry } = body;
-    const client = authClient(accessToken);
-    const { data: userData } = await client.auth.getUser();
-    if (!userData?.user) return err("Not authenticated", 401);
+    // ── Save user profile ─────────────────────────────────────────
+    if (action === "saveProfile") {
+      const { accessToken, background, worry } = body;
+      const client = authClient(accessToken);
+      const { data: userData } = await client.auth.getUser();
+      if (!userData?.user) return err("Not authenticated", 401);
 
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        background: background || null,
-        worry: worry || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userData.user.id);
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          background: background || null,
+          worry: worry || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userData.user.id);
 
-    if (error) throw error;
-    return ok({});
-  }
+      if (error) throw error;
+      return ok({});
+    }
 
     return err("Unknown action", 400);
 
