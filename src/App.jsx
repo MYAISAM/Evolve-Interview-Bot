@@ -2883,6 +2883,7 @@ export default function App() {
   const [authDestination, setAuthDestination] = useState("session"); // "session" | "dashboard"
   const [userProfile, setUserProfile] = useState(null); // { background, worry } from profiles table
   const [creditsData, setCreditsData] = useState(null); // { credits_remaining, ... }
+  const [stripeReturning, setStripeReturning] = useState(() => new URLSearchParams(window.location.search).get("paid") === "true");
 
   // Restore auth from sessionStorage on every load (survives Stripe redirect)
   useEffect(() => {
@@ -2964,6 +2965,7 @@ useEffect(() => {
       await addCreditsAfterPayment(tier || "single");
       const cred = await getCredits();
       setCreditsData(cred);
+      setStripeReturning(false);
       setStep(7);
       return;
     }
@@ -2983,8 +2985,10 @@ useEffect(() => {
         setUserInfo(session.user_info || null);
         setRestoredSession(session);
         sessionStorage.removeItem("aey_session_id");
+        setStripeReturning(false);
         setStep(5);
       } else {
+        setStripeReturning(false);
         setStep(1);
       }
     } else if (currentAccessToken) {
@@ -2992,8 +2996,10 @@ useEffect(() => {
       const cred = await getCredits();
       setCreditsData(cred);
       sessionStorage.setItem("aey_credits_just_added", "true");
+      setStripeReturning(false);
       setStep(2);
     } else {
+      setStripeReturning(false);
       setStep(1);
     }
   }
@@ -3015,6 +3021,21 @@ useEffect(() => {
     setCareerStage(null); setJd(""); setJobTitle(""); setCompany(""); setUserInfo(null);
     setSessionAnswers([]); setCurrentSessionId(null);
     setStep(3);
+  }
+
+  if (stripeReturning) {
+    return (
+      <>
+        <style>{css}</style>
+        <div style={{ minHeight: "100vh", background: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center", padding: "60px 24px" }}>
+            <ThinkingDots colour={t.accentGreen} />
+            <p style={{ marginTop: 16, fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 600, color: t.ink }}>Payment confirmed</p>
+            <p style={{ marginTop: 8, fontFamily: "'Inter', sans-serif", fontSize: 14, color: t.inkMid }}>Returning you to your session...</p>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
