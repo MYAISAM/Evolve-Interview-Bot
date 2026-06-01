@@ -1470,6 +1470,10 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
     return params.get("paid") === "true" || !!hasCredits;
   });
   const [pendingAnswers, setPendingAnswers] = useState(null);
+  const [paywallGiftMode, setPaywallGiftMode] = useState(false);
+  const [paywallGiftInput, setPaywallGiftInput] = useState("");
+  const [paywallGiftLoading, setPaywallGiftLoading] = useState(false);
+  const [paywallGiftMessage, setPaywallGiftMessage] = useState(null);
   const recognitionRef = useRef(null);
   const sessionIdRef = useRef(null);
   useScrollToTop("coaching");
@@ -1862,6 +1866,8 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
         completed: isLastQuestion,
         answers: newAnswers,
         current_q: currentQ + 1,
+        questions: questions,
+        question_types: questionTypes,
       });
     }
 
@@ -2033,6 +2039,63 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
           </a>
 
         </div>
+
+        {/* Gift code redemption at paywall */}
+        {paywallGiftMode ? (
+          <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, padding: "16px 20px", marginBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 10 }}>Enter your gift code</p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <input
+                value={paywallGiftInput}
+                onChange={e => setPaywallGiftInput(e.target.value.toUpperCase())}
+                placeholder="GIFT-XXXX-XXXX"
+                style={{ flex: 1, background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "9px 14px", color: t.ink, fontSize: 13, outline: "none", fontFamily: "'Inter', sans-serif", letterSpacing: "0.05em" }}
+              />
+              <button
+                disabled={paywallGiftLoading || paywallGiftInput.length < 10}
+                onClick={async () => {
+                  setPaywallGiftLoading(true);
+                  setPaywallGiftMessage(null);
+                  const token = currentAccessToken || sessionStorage.getItem("aey_token");
+                  const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+                  try {
+                    const res = await fetch(AUTH_API, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "redeemGiftCode", code: paywallGiftInput, userId: user?.id, accessToken: token }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setPaywallGiftMessage({ type: "success", text: `Gift code applied! ${data.creditsAdded} credit${data.creditsAdded > 1 ? "s" : ""} added.` });
+                      setTimeout(() => {
+                        setPaid(true);
+                        setPaywallGiftMode(false);
+                      }, 1000);
+                    } else {
+                      setPaywallGiftMessage({ type: "error", text: data.error || "Invalid code — check and try again." });
+                    }
+                  } catch(e) {
+                    setPaywallGiftMessage({ type: "error", text: "Something went wrong — please try again." });
+                  }
+                  setPaywallGiftLoading(false);
+                }}
+                style={{ background: t.accentGreen, color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: paywallGiftLoading || paywallGiftInput.length < 10 ? "not-allowed" : "pointer", opacity: paywallGiftLoading || paywallGiftInput.length < 10 ? 0.5 : 1, fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}
+              >
+                {paywallGiftLoading ? "..." : "Redeem"}
+              </button>
+            </div>
+            {paywallGiftMessage && (
+              <p style={{ fontSize: 12, color: paywallGiftMessage.type === "success" ? t.accentGreen : t.accentPop, marginBottom: 4 }}>{paywallGiftMessage.text}</p>
+            )}
+            <button onClick={() => { setPaywallGiftMode(false); setPaywallGiftInput(""); setPaywallGiftMessage(null); }} style={{ background: "none", border: "none", color: t.inkLight, fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>Cancel</button>
+          </div>
+        ) : (
+          <p style={{ textAlign: "center", marginBottom: 12 }}>
+            <button onClick={() => setPaywallGiftMode(true)} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 12, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>
+              Have a gift code? Redeem it here
+            </button>
+          </p>
+        )}
 
         <p style={{ fontSize: 12, color: t.inkLight, textAlign: "center", fontStyle: "italic", lineHeight: 1.6 }}>
           Secure payment via Stripe. You'll be returned here immediately after paying to continue your session.
