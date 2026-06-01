@@ -358,17 +358,30 @@ exports.handler = async (event) => {
       return ok({});
     }
 
-    // ── Get session history for user ──────────────────────────────
+    // ── Get session history for user (lightweight -- list view only) ──
     if (action === "getSessionHistory") {
       const { accessToken } = body;
       const client = authClient(accessToken);
       const { data, error } = await client
         .from("coach_sessions")
-        .select("id, role_family, career_stage, job_title, company, category_label, completed, paid, tier, cheat_sheet, answers, questions, user_info, interview_outcome, interview_notes, interview_date, created_at, updated_at, questions_answered")
+        .select("id, role_family, career_stage, job_title, company, category_label, completed, paid, tier, interview_outcome, interview_notes, interview_date, created_at, updated_at, questions_answered, current_q, questions, question_types")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       return ok({ sessions: data });
+    }
+
+    // ── Get single session full detail (cheat sheet + answers) ────
+    if (action === "getSessionDetail") {
+      const { accessToken, sessionId } = body;
+      const client = authClient(accessToken);
+      const { data, error } = await client
+        .from("coach_sessions")
+        .select("*")
+        .eq("id", sessionId)
+        .single();
+      if (error) throw error;
+      return ok({ session: data });
     }
 
     // ── Update interview outcome (diary) ──────────────────────────
