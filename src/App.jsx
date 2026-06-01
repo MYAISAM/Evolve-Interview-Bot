@@ -3050,7 +3050,10 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
               <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: isNewest ? `3px solid ${t.accentGreen}` : `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
                 <div onClick={async () => {
                   if (!sess.completed && sess.questions && sess.questions.length > 0 && onResumeSession) {
-                    onResumeSession(sess);
+                    setLoadingDetail(true);
+                    const full = await getSessionDetail(sess.id);
+                    setLoadingDetail(false);
+                    onResumeSession(full || sess);
                   } else {
                     setLoadingDetail(true);
                     const full = await getSessionDetail(sess.id);
