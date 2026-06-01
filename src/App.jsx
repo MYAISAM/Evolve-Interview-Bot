@@ -1470,17 +1470,19 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
         setAnswers(s.answers || []);
         setCurrentQ(s.current_q || 3);
         sessionIdRef.current = s.id;
-        setPaid(true); // They've returned from Stripe -- unlock the session
+        setPaid(true); // Unlock the session
         setPhase("answering");
-        // Decrement credit for Stripe-purchased session
-        const token = currentAccessToken || sessionStorage.getItem("aey_token");
-        const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
-        if (token && user) {
-          fetch(AUTH_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "decrementCredit", userId: user.id, sessionId: s.id, accessToken: token }),
-          }).catch(e => console.error("Decrement credit error:", e));
+        // Only decrement credit if returning from Stripe, not resuming from dashboard
+        if (!s.isResume) {
+          const token = currentAccessToken || sessionStorage.getItem("aey_token");
+          const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+          if (token && user) {
+            fetch(AUTH_API, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "decrementCredit", userId: user.id, sessionId: s.id, accessToken: token }),
+            }).catch(e => console.error("Decrement credit error:", e));
+          }
         }
         return;
       }
@@ -2601,7 +2603,7 @@ function CreditsStep({ onContinue, onBuyCredits, creditsData: initialCredits }) 
 }
 
 // ── Session History Step ──────────────────────────────────────────
-function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved, initialCreditsData, onCreditsRefresh }) {
+function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile, onProfileSaved, initialCreditsData, onCreditsRefresh }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
@@ -2613,6 +2615,34 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
   const [profileDraft, setProfileDraft] = useState({ background: userProfile?.background || "", worry: userProfile?.worry || "" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
+  const [giftCode, setGiftCode] = useState(null);
+  const [giftCodeLoading, setGiftCodeLoading] = useState(false);
+  const [giftCopyToast, setGiftCopyToast] = useState(false);
+  const [redeemMode, setRedeemMode] = useState(false);
+  const [redeemInput, setRedeemInput] = useState("");
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemMessage, setRedeemMessage] = useState(null);
+
+  // Handle gift purchase return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const giftTier = sessionStorage.getItem("aey_gift_purchase");
+    if (params.get("paid") === "true" && giftTier) {
+      sessionStorage.removeItem("aey_gift_purchase");
+      setGiftCodeLoading(true);
+      const token = currentAccessToken || sessionStorage.getItem("aey_token");
+      const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+      fetch(AUTH_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "createGiftCode", userId: user?.id, tier: giftTier === "bundle" ? "gift_bundle" : "gift_single" }),
+      })
+        .then(r => r.json())
+        .then(data => { if (data.success) setGiftCode(data.code); })
+        .catch(e => console.error("Gift code error:", e))
+        .finally(() => setGiftCodeLoading(false));
+    }
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -2669,6 +2699,36 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
         ) : (
           <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 12, padding: 24, color: t.inkMid, fontStyle: "italic" }}>
             No cheat sheet saved for this session.
+          </div>
+        )}
+
+        {selectedSession.cheat_sheet && (
+          <div style={{ background: "#f0f9f0", border: `1.5px solid ${t.accentGreen}30`, borderRadius: 10, padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 2 }}>Save as PDF</p>
+              <p style={{ fontSize: 12, color: t.inkMid }}>Download a copy of your cheat sheet and Q&amp;A</p>
+            </div>
+            <button onClick={() => {
+              const printWindow = window.open("", "_blank", "width=800,height=900");
+              const styles = `body { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; color: #111; padding: 32px; max-width: 720px; margin: 0 auto; } h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; } h2 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; } pre { white-space: pre-wrap; word-break: break-word; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; } hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; } .qa-block { margin-bottom: 20px; } .qa-q { font-weight: 600; margin-bottom: 4px; } .qa-a { color: #444; margin-bottom: 4px; } .qa-coaching { color: #c2410c; font-style: italic; } .footer { font-size: 11px; color: #999; margin-top: 24px; }`;
+              const answers = selectedSession.answers || [];
+              const qas = answers.filter(a => a.genuine && a.a).map((item, i) => {
+                const lines = (item.feedback || "").split("\n").map(l => l.trim()).filter(Boolean);
+                const sharpenIdx = lines.findIndex(l => l.toLowerCase().startsWith("what to sharpen"));
+                const tryIdx = lines.findIndex(l => l.toLowerCase().startsWith("try saying"));
+                const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
+                const coachingLine = sharpenIdx >= 0 ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l)) : null;
+                const tryLine = tryIdx >= 0 ? lines.slice(tryIdx + 1).filter(l => l.length > 20 && !isHeader(l)).join(" ") : null;
+                return `<div class="qa-block"><p class="qa-q">Q${i + 1}: ${item.q}</p><p class="qa-a">Your answer: ${(item.a || "").slice(0, 600)}${(item.a || "").length > 600 ? "..." : ""}</p>${coachingLine ? `<p class="qa-coaching">Coaching: ${coachingLine}</p>` : ""}${tryLine ? `<p class="qa-coaching">Try: ${tryLine.slice(0, 300)}</p>` : ""}</div>`;
+              }).join("");
+              const title = selectedSession.job_title ? `${selectedSession.job_title}${selectedSession.company ? " · " + selectedSession.company : ""}` : (selectedSession.category_label || "Interview session");
+              printWindow.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${styles}</style></head><body><h1>AI Evolving You — Interview Cheat Sheet</h1><p style="font-size:12px;color:#555;margin-bottom:16px">${title} · ${formatDate(selectedSession.created_at)}</p><hr/><pre>${selectedSession.cheat_sheet}</pre>${qas ? `<hr/><h2>Session Recap</h2>${qas}` : ""}<hr/><p class="footer">coach.aievolvingyou.com</p></body></html>`);
+              printWindow.document.close();
+              printWindow.focus();
+              setTimeout(() => { printWindow.print(); }, 500);
+            }} style={{ background: t.accentGreen, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}>
+              Save PDF
+            </button>
           </div>
         )}
 
@@ -2801,6 +2861,51 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
         )}
       </div>
 
+      {/* ── Redeem gift code ── */}
+      {redeemMode ? (
+        <div style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderRadius: 10, padding: "14px 18px", marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: t.ink, marginBottom: 10 }}>Enter your gift code</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={redeemInput} onChange={e => setRedeemInput(e.target.value.toUpperCase())}
+              placeholder="GIFT-XXXX-XXXX"
+              style={{ flex: 1, border: `1.5px solid ${t.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 14, fontFamily: "'Inter', sans-serif", color: t.ink, background: t.surface, outline: "none", letterSpacing: "0.05em" }}
+            />
+            <button
+              disabled={redeemLoading || redeemInput.length < 10}
+              onClick={async () => {
+                setRedeemLoading(true); setRedeemMessage(null);
+                try {
+                  const token = currentAccessToken || sessionStorage.getItem("aey_token");
+                  const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+                  const res = await fetch(AUTH_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "redeemGiftCode", code: redeemInput, userId: user?.id, accessToken: token }) });
+                  const data = await res.json();
+                  if (data.success) {
+                    setRedeemMessage({ type: "success", text: `${data.creditsAdded} credit${data.creditsAdded !== 1 ? "s" : ""} added to your account!` });
+                    setRedeemInput(""); setRedeemMode(false);
+                    getCredits().then(cred => { if (cred) setCreditsData(cred); });
+                  } else {
+                    setRedeemMessage({ type: "error", text: data.error || "Invalid code. Please check and try again." });
+                  }
+                } catch { setRedeemMessage({ type: "error", text: "Something went wrong. Please try again." }); }
+                setRedeemLoading(false);
+              }}
+              style={{ background: t.accentGreen, color: "#fff", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: redeemLoading || redeemInput.length < 10 ? "not-allowed" : "pointer", opacity: redeemLoading || redeemInput.length < 10 ? 0.5 : 1, fontFamily: "'Inter', sans-serif" }}
+            >
+              {redeemLoading ? "..." : "Redeem"}
+            </button>
+          </div>
+          {redeemMessage && <p style={{ fontSize: 12, marginTop: 8, color: redeemMessage.type === "success" ? t.accentGreen : t.accentPop }}>{redeemMessage.text}</p>}
+          <button onClick={() => { setRedeemMode(false); setRedeemInput(""); setRedeemMessage(null); }} style={{ background: "none", border: "none", color: t.inkLight, fontSize: 12, cursor: "pointer", marginTop: 8, fontFamily: "'Inter', sans-serif" }}>Cancel</button>
+        </div>
+      ) : (
+        <p style={{ textAlign: "center", marginBottom: 8 }}>
+          <button onClick={() => setRedeemMode(true)} style={{ background: "none", border: "none", color: t.inkMid, fontSize: 12, cursor: "pointer", textDecoration: "underline", fontFamily: "'Inter', sans-serif" }}>
+            Have a gift code? Redeem it here
+          </button>
+        </p>
+      )}
+
       <SectionDivider />
 
       {/* ── Past sessions ── */}
@@ -2821,7 +2926,7 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
             const isNewest = sess.id === mostRecentSessionId;
             return (
               <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: isNewest ? `3px solid ${t.accentGreen}` : `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
-                <div onClick={() => setSelectedSession(sess)} className="hover-lift" style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                <div onClick={() => { if (!sess.completed && sess.questions && sess.questions.length > 0 && onResumeSession) { onResumeSession(sess); } else { setSelectedSession(sess); } }} className="hover-lift" style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>
@@ -2927,19 +3032,35 @@ function SessionHistoryStep({ onNewSession, onBack, userProfile, onProfileSaved,
             <Icon name="gift" size={18} colour={t.accentPop} />
             <span style={{ fontSize: 13, fontWeight: 600, color: t.ink }}>Buy a gift session</span>
           </div>
-          <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Give someone a coaching session as a gift.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
-            <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" style={{ textDecoration: "none" }}>
-              <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
-                Single session £5
+          {giftCode ? (
+            <div style={{ background: "#fdf0e6", border: `1.5px solid ${t.accentPop}30`, borderRadius: 8, padding: "12px 14px" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: t.accentPop, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Your gift code</p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: t.ink, letterSpacing: "0.1em", marginBottom: 8, fontFamily: "monospace" }}>{giftCode}</p>
+              <button onClick={() => { navigator.clipboard.writeText(giftCode); setGiftCopyToast(true); setTimeout(() => setGiftCopyToast(false), 2500); }} style={{ width: "100%", background: giftCopyToast ? t.accentPop : "none", color: giftCopyToast ? "#fff" : t.accentPop, border: `1px solid ${t.accentPop}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 600, transition: "all 0.2s" }}>
+                {giftCopyToast ? "Copied!" : "Copy code to share"}
               </button>
-            </a>
-            <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" style={{ textDecoration: "none" }}>
-              <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
-                Bundle 3 sessions £12
-              </button>
-            </a>
-          </div>
+              <p style={{ fontSize: 11, color: t.inkLight, marginTop: 8, textAlign: "center" }}>Share this code — they enter it at checkout</p>
+              <button onClick={() => setGiftCode(null)} style={{ background: "none", border: "none", color: t.inkLight, fontSize: 11, cursor: "pointer", width: "100%", marginTop: 4 }}>Buy another</button>
+            </div>
+          ) : giftCodeLoading ? (
+            <div style={{ textAlign: "center", padding: "12px 0" }}><ThinkingDots colour={t.accentPop} /></div>
+          ) : (
+            <>
+              <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Give someone a coaching session as a gift. They'll get a code to redeem.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
+                <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" onClick={() => sessionStorage.setItem("aey_gift_purchase", "single")} style={{ textDecoration: "none" }}>
+                  <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                    Single session £5
+                  </button>
+                </a>
+                <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" onClick={() => sessionStorage.setItem("aey_gift_purchase", "bundle")} style={{ textDecoration: "none" }}>
+                  <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                    Bundle 3 sessions £12
+                  </button>
+                </a>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -3289,6 +3410,26 @@ useEffect(() => {
             <SessionHistoryStep
               onNewSession={() => setStep(3)}
               onBack={() => setStep(6)}
+              onResumeSession={(sess) => {
+                // Restore session state from Supabase row and resume at saved question
+                const catKey = sess.role_family
+                  ? (QUESTION_BANK[sess.role_family] ? sess.role_family : Object.keys(QUESTION_BANK).find(k => QUESTION_BANK[k].label === sess.role_family) || sess.role_family)
+                  : null;
+                const stageKey = sess.career_stage
+                  ? (QUESTION_BANK[sess.career_stage] ? sess.career_stage : Object.keys(QUESTION_BANK).find(k => QUESTION_BANK[k].label === sess.career_stage) || sess.career_stage)
+                  : null;
+                setCategory(catKey);
+                setRoleFamily(catKey);
+                setCareerStage(stageKey);
+                setJd(sess.jd || "");
+                setJobTitle(sess.job_title || "");
+                setCompany(sess.company || "");
+                setUserInfo(sess.user_info || null);
+                setCurrentSessionId(sess.id);
+                setSessionAnswers(sess.answers || []);
+                setRestoredSession({ ...sess, isResume: true });
+                setStep(5);
+              }}
               userProfile={userProfile}
               onProfileSaved={(updated) => setUserProfile(updated)}
               initialCreditsData={creditsData}
