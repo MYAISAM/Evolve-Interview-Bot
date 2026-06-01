@@ -97,6 +97,20 @@ async function getUserSessions() {
   } catch (e) { console.error("Get sessions error:", e); return []; }
 }
 
+async function getSessionDetail(sessionId) {
+  const token = currentAccessToken || sessionStorage.getItem("aey_token");
+  if (!token || !sessionId) return null;
+  try {
+    const res = await fetch(AUTH_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "getSessionDetail", sessionId, accessToken: token }),
+    });
+    const data = await res.json();
+    return data.success ? data.session : null;
+  } catch (e) { console.error("Get session detail error:", e); return null; }
+}
+
 async function updateSessionOutcome(sessionId, outcome, notes, interviewDate) {
   if (!currentAccessToken || !sessionId) return;
   try {
@@ -1467,10 +1481,13 @@ function CoachingStep({ category, roleFamily, careerStage, jd, jobTitle, company
       if (s.questions && s.questions.length > 0) {
         setQuestions(s.questions);
         setQuestionTypes(s.question_types || []);
-        setAnswers(s.answers || []);
-        setCurrentQ(s.current_q || 3);
+        const restoredAnswers = s.answers || [];
+        setAnswers(restoredAnswers);
+        // For dashboard resumes use answers.length as current_q; for Stripe returns use saved current_q
+        setCurrentQ(s.isResume ? (restoredAnswers.length || 0) : (s.current_q || 3));
         sessionIdRef.current = s.id;
-        setPaid(true); // Unlock the session
+        // Restore paid status from session — don't force paid=true for pre-paywall resumes
+        setPaid(s.isResume ? (s.paid || false) : true);
         setPhase("answering");
         // Only decrement credit if returning from Stripe, not resuming from dashboard
         if (!s.isResume) {
@@ -1844,6 +1861,7 @@ Keep the whole response under 220 words. Be a coach, not a critic. No bullet poi
         questions_answered: newAnswers.filter(a => a.genuine).length,
         completed: isLastQuestion,
         answers: newAnswers,
+        current_q: currentQ + 1,
       });
     }
 
@@ -2607,6 +2625,7 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [creditsData, setCreditsData] = useState(initialCreditsData || null);
   const [outcomeForm, setOutcomeForm] = useState(null); // { sessionId, outcome, notes, date }
   const [savingOutcome, setSavingOutcome] = useState(false);
@@ -2626,21 +2645,28 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
   // Handle gift purchase return
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const giftTier = sessionStorage.getItem("aey_gift_purchase");
-    if (params.get("paid") === "true" && giftTier) {
-      sessionStorage.removeItem("aey_gift_purchase");
-      setGiftCodeLoading(true);
-      const token = currentAccessToken || sessionStorage.getItem("aey_token");
-      const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
-      fetch(AUTH_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "createGiftCode", userId: user?.id, tier: giftTier === "bundle" ? "gift_bundle" : "gift_single" }),
-      })
-        .then(r => r.json())
-        .then(data => { if (data.success) setGiftCode(data.code); })
-        .catch(e => console.error("Gift code error:", e))
-        .finally(() => setGiftCodeLoading(false));
+    const pendingCode = sessionStorage.getItem("aey_pending_gift_code");
+    if (pendingCode) {
+      sessionStorage.removeItem("aey_pending_gift_code");
+      setGiftCode(pendingCode);
+    } else {
+      // Legacy fallback: if somehow landed here with paid=true and gift flag still set
+      const giftTier = sessionStorage.getItem("aey_gift_purchase");
+      if (params.get("paid") === "true" && giftTier) {
+        sessionStorage.removeItem("aey_gift_purchase");
+        setGiftCodeLoading(true);
+        const token = currentAccessToken || sessionStorage.getItem("aey_token");
+        const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+        fetch(AUTH_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "createGiftCode", userId: user?.id, tier: giftTier === "bundle" ? "gift_bundle" : "gift_single" }),
+        })
+          .then(r => r.json())
+          .then(data => { if (data.success) setGiftCode(data.code); })
+          .catch(e => console.error("Gift code error:", e))
+          .finally(() => setGiftCodeLoading(false));
+      }
     }
   }, []);
 
@@ -2682,6 +2708,15 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
     );
   }
 
+  // Loading state while fetching full session detail
+  if (loadingDetail) {
+    return (
+      <div style={{ maxWidth: 660, margin: "0 auto", padding: "60px 24px", textAlign: "center" }}>
+        <p style={{ fontSize: 14, color: t.inkMid, fontFamily: "'Inter', sans-serif" }}>Loading session...</p>
+      </div>
+    );
+  }
+
   // Full cheat sheet view for a past session
   if (selectedSession) {
     return (
@@ -2710,22 +2745,46 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
             </div>
             <button onClick={() => {
               const printWindow = window.open("", "_blank", "width=800,height=900");
-              const styles = `body { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; color: #111; padding: 32px; max-width: 720px; margin: 0 auto; } h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; } h2 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; } pre { white-space: pre-wrap; word-break: break-word; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; } hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; } .qa-block { margin-bottom: 20px; } .qa-q { font-weight: 600; margin-bottom: 4px; } .qa-a { color: #444; margin-bottom: 4px; } .qa-coaching { color: #c2410c; font-style: italic; } .footer { font-size: 11px; color: #999; margin-top: 24px; }`;
-              const answers = selectedSession.answers || [];
-              const qas = answers.filter(a => a.genuine && a.a).map((item, i) => {
+              const styles = `
+                body { font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; color: #111; padding: 32px; max-width: 720px; margin: 0 auto; }
+                h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+                h2 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; }
+                p { margin: 0 0 8px; }
+                pre { white-space: pre-wrap; word-break: break-word; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.8; }
+                hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
+                .qa-block { margin-bottom: 20px; }
+                .qa-q { font-weight: 600; margin-bottom: 4px; }
+                .qa-a { color: #444; margin-bottom: 4px; }
+                .qa-coaching { color: #c2410c; font-style: italic; }
+                .footer { font-size: 11px; color: #999; margin-top: 24px; }
+              `;
+              const sessionAnswers = selectedSession.answers || [];
+              const qas = sessionAnswers.filter(a => a.genuine && a.a).map((item, i) => {
                 const lines = (item.feedback || "").split("\n").map(l => l.trim()).filter(Boolean);
+                const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
                 const sharpenIdx = lines.findIndex(l => l.toLowerCase().startsWith("what to sharpen"));
                 const tryIdx = lines.findIndex(l => l.toLowerCase().startsWith("try saying"));
-                const isHeader = l => ["what landed well", "what to sharpen", "try saying"].some(h => l.toLowerCase().startsWith(h));
-                const coachingLine = sharpenIdx >= 0 ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l)) : null;
+                const coachingLine = sharpenIdx >= 0 ? lines.slice(sharpenIdx + 1).find(l => l.length > 20 && !isHeader(l)) : lines.find(l => l.length > 20 && !isHeader(l));
                 const tryLine = tryIdx >= 0 ? lines.slice(tryIdx + 1).filter(l => l.length > 20 && !isHeader(l)).join(" ") : null;
-                return `<div class="qa-block"><p class="qa-q">Q${i + 1}: ${item.q}</p><p class="qa-a">Your answer: ${(item.a || "").slice(0, 600)}${(item.a || "").length > 600 ? "..." : ""}</p>${coachingLine ? `<p class="qa-coaching">Coaching: ${coachingLine}</p>` : ""}${tryLine ? `<p class="qa-coaching">Try: ${tryLine.slice(0, 300)}</p>` : ""}</div>`;
+                return `<div class="qa-block">
+                  <p class="qa-q">Q${i + 1}: ${item.q}</p>
+                  <p class="qa-a">Your answer: ${item.a.length > 600 ? item.a.slice(0, 600) + "..." : item.a}</p>
+                  ${coachingLine ? `<p class="qa-coaching">Coaching: ${coachingLine}</p>` : ""}
+                  ${tryLine ? `<p class="qa-coaching">Try saying it like this: ${tryLine}</p>` : ""}
+                </div>`;
               }).join("");
               const title = selectedSession.job_title ? `${selectedSession.job_title}${selectedSession.company ? " · " + selectedSession.company : ""}` : (selectedSession.category_label || "Interview session");
-              printWindow.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${styles}</style></head><body><h1>AI Evolving You — Interview Cheat Sheet</h1><p style="font-size:12px;color:#555;margin-bottom:16px">${title} · ${formatDate(selectedSession.created_at)}</p><hr/><pre>${selectedSession.cheat_sheet}</pre>${qas ? `<hr/><h2>Session Recap</h2>${qas}` : ""}<hr/><p class="footer">coach.aievolvingyou.com</p></body></html>`);
+              printWindow.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>${styles}</style></head><body>
+                <h1>AI Evolving You — Interview Cheat Sheet</h1>
+                <p style="font-size:12px;color:#555;margin-bottom:16px">${title} · ${formatDate(selectedSession.created_at)}</p>
+                <hr/>
+                <pre>${selectedSession.cheat_sheet}</pre>
+                ${qas ? `<hr/><h2>Session Recap</h2>${qas}` : ""}
+                <hr/><p class="footer">coach.aievolvingyou.com</p>
+              </body></html>`);
               printWindow.document.close();
               printWindow.focus();
-              setTimeout(() => { printWindow.print(); }, 500);
+              setTimeout(() => { printWindow.print(); }, 1200);
             }} style={{ background: t.accentGreen, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif", whiteSpace: "nowrap" }}>
               Save PDF
             </button>
@@ -2926,7 +2985,16 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
             const isNewest = sess.id === mostRecentSessionId;
             return (
               <div key={sess.id} style={{ background: t.surface, border: `1.5px solid ${t.border}`, borderLeft: isNewest ? `3px solid ${t.accentGreen}` : `1.5px solid ${t.border}`, borderRadius: 12, overflow: "hidden" }}>
-                <div onClick={() => { if (!sess.completed && sess.questions && sess.questions.length > 0 && onResumeSession) { onResumeSession(sess); } else { setSelectedSession(sess); } }} className="hover-lift" style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                <div onClick={async () => {
+                  if (!sess.completed && sess.questions && sess.questions.length > 0 && onResumeSession) {
+                    onResumeSession(sess);
+                  } else {
+                    setLoadingDetail(true);
+                    const full = await getSessionDetail(sess.id);
+                    setLoadingDetail(false);
+                    setSelectedSession(full || sess);
+                  }
+                }} className="hover-lift" style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                       <span style={{ fontWeight: 600, fontSize: 14, color: t.ink }}>
@@ -3048,12 +3116,12 @@ function SessionHistoryStep({ onNewSession, onBack, onResumeSession, userProfile
             <>
               <p style={{ fontSize: 12, color: t.inkMid, lineHeight: 1.5 }}>Give someone a coaching session as a gift. They'll get a code to redeem.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
-                <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" onClick={() => sessionStorage.setItem("aey_gift_purchase", "single")} style={{ textDecoration: "none" }}>
+                <a href="https://buy.stripe.com/eVqbJ10wOcOa4MAcux5Ne06" onClick={() => { sessionStorage.setItem("aey_gift_purchase", "single"); sessionStorage.setItem("aey_stripe_source", "gift"); }} style={{ textDecoration: "none" }}>
                   <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
                     Single session £5
                   </button>
                 </a>
-                <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" onClick={() => sessionStorage.setItem("aey_gift_purchase", "bundle")} style={{ textDecoration: "none" }}>
+                <a href="https://buy.stripe.com/bJe8wPcfw7tQenagKN5Ne05" onClick={() => { sessionStorage.setItem("aey_gift_purchase", "bundle"); sessionStorage.setItem("aey_stripe_source", "gift"); }} style={{ textDecoration: "none" }}>
                   <button style={{ width: "100%", background: "none", border: `1px solid ${t.border}`, borderRadius: 7, padding: "7px 14px", fontSize: 12, color: t.inkMid, cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
                     Bundle 3 sessions £12
                   </button>
@@ -3174,6 +3242,29 @@ useEffect(() => {
 
   // Inner async function so we can await credit writes before navigating
   async function handleReturn() {
+    if (stripeSource === "gift" && currentAccessToken) {
+      // Gift purchase — generate code, don't add credits to buyer's account
+      const giftTier = sessionStorage.getItem("aey_gift_purchase");
+      sessionStorage.removeItem("aey_gift_purchase");
+      const user = currentUser || (() => { try { return JSON.parse(sessionStorage.getItem("aey_user")); } catch(e) { return null; } })();
+      if (giftTier && user?.id) {
+        try {
+          const res = await fetch(AUTH_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "createGiftCode", userId: user.id, tier: giftTier === "bundle" ? "gift_bundle" : "gift_single", accessToken: currentAccessToken }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            sessionStorage.setItem("aey_pending_gift_code", data.code);
+          }
+        } catch(e) { console.error("Gift code creation error:", e); }
+      }
+      setStripeReturning(false);
+      setStep(7);
+      return;
+    }
+
     if (stripeSource === "dashboard" && currentAccessToken) {
       await addCreditsAfterPayment(tier || "single");
       const cred = await getCredits();
@@ -3440,4 +3531,4 @@ useEffect(() => {
       </div>
     </>
   );
-}
+}4
